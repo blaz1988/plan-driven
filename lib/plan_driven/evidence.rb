@@ -26,11 +26,12 @@ module PlanDriven
     def run_cucumber(plan, actor:, command: nil, root: PlanDriven.configuration.root_path)
       Dir.mktmpdir do |dir|
         out = File.join(dir, "cucumber.json")
+        shown = command&.join(" ") || %(bundle exec cucumber --tags "#{tag_expression(plan)}")
         command ||= ["bundle", "exec", "cucumber", "--tags", tag_expression(plan), "--format", "json", "--out", out,
                      "--format", "progress"]
         output, status = Open3.capture2e(*command, chdir: root.to_s)
         json = File.exist?(out) ? File.read(out) : "[]"
-        record(plan, json, command: command.join(" "), actor: actor, exit_ok: status.success?, output: output)
+        record(plan, json, command: shown, actor: actor, exit_ok: status.success?, output: output)
       end
     end
 
