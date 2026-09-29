@@ -323,9 +323,10 @@ Everything has a default. The generated initializer lists the settings:
 ```ruby
 # config/initializers/plan_driven.rb
 PlanDriven.configure do |config|
-  config.llm_provider = :openai                 # or :anthropic
-  config.llm_model = "gpt-4.1"                  # default: gpt-4.1, or claude-sonnet-4-5
+  config.llm_provider = :openai                 # or :anthropic, or :cursor
+  config.llm_model = "gpt-4.1"                  # default: gpt-4.1, claude-sonnet-4-5, claude-opus-5-5
   config.llm_api_base = nil                     # an OpenAI-compatible gateway
+  config.node_command = "node"                  # :cursor only; Node 22.13+ (or PLAN_DRIVEN_NODE)
 
   config.plan_approvals = %w[review qa devops director]
   config.ticket_approvals = %w[review]
@@ -351,7 +352,15 @@ end
 ```
 
 Planning is where a stronger model pays for itself, so the defaults are GPT-4.1 and Claude
-Sonnet rather than their mini versions. A plan costs a few cents. `config.template` replaces
+Sonnet rather than their mini versions. A plan costs a few cents.
+
+`llm_provider :cursor` drafts with any model on your Cursor account (Claude Opus by default)
+through the [Cursor SDK](https://cursor.com/docs/sdk/typescript), with no other LLM key. The
+agent runs on your machine with read-only tools (read, grep, glob, ls), so it reads the
+application's code while it writes the plan and can't change a file. It needs Node 22.13+ and
+the SDK: `npm install --prefix ~/.plan_driven/node @cursor/sdk`. `plan-driven doctor` checks both.
+
+`config.template` replaces
 the plan's sections if your template differs, and `config.pdf_renderer` takes any callable
 `(html_path, pdf_path)` if you'd rather not use Chrome.
 
@@ -360,7 +369,7 @@ the plan's sections if your template differs, and `config.pdf_renderer` takes an
 | Key | Used for | Environment |
 | --- | --- | --- |
 | `openai_api_key` or `anthropic_api_key` | drafting plans and tickets | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` |
-| `cursor_api_key` | cloud agents (Cursor dashboard, Integrations) | `CURSOR_API_KEY` |
+| `cursor_api_key` | cloud agents, and drafting with `llm_provider :cursor` (Cursor dashboard, Integrations) | `CURSOR_API_KEY` |
 | `github_token` | issues, pull requests, checks, merge | `GITHUB_TOKEN`, or `gh auth token` |
 
 Keys are read from the environment first, then from `~/.plan_driven/config` (mode 0600 in a

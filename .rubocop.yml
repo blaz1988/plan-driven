@@ -29,6 +29,7 @@ Metrics/AbcSize:
     - "lib/plan_driven/cli/*_commands.rb"
     - "lib/plan_driven/renderer/html.rb"
     - "lib/plan_driven/gherkin.rb"
+    - "lib/plan_driven/configuration.rb"
 
 Metrics/CyclomaticComplexity:
   Max: 12

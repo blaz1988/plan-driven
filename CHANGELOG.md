@@ -6,6 +6,20 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `llm_provider :cursor` drafts plans and tickets with a model on the user's Cursor account
+  (Claude Opus 5.5 by default) through the Cursor SDK. The agent reads the application's code
+  with read-only tools.
+- `doctor` checks the agent model against the models the Cursor key can use, and Node and the
+  SDK for `:cursor`.
+- `status` suggests the next step during development.
+
+### Fixed
+
+- `merge` marks an agent's draft pull request ready for review before merging it.
+- The delivery report shows the Cucumber command without its temporary output path.
+
 ## [0.1.0] - 2026-09-29
 
 First public release.

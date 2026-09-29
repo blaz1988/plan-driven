@@ -2,7 +2,8 @@
 
 module PlanDriven
   # One call: a system prompt and messages in, text out. Planning is where a stronger model pays
-  # for itself, so the default is a GPT-4.1 or Claude Sonnet class model, not a mini one.
+  # for itself, so the default is a GPT-4.1 or Claude Sonnet class model, not a mini one, and
+  # :cursor drafts with any model on the user's Cursor account (see CursorLLM).
   class LLM
     OPENAI_BASE = "https://api.openai.com/v1"
     ANTHROPIC_BASE = "https://api.anthropic.com/v1"
@@ -19,7 +20,11 @@ module PlanDriven
     def chat(system:, messages:, max_tokens: 8000)
       return wrap(@client.call(system: system, messages: messages)) if @client
 
-      anthropic? ? anthropic(system, messages, max_tokens) : openai(system, messages, max_tokens)
+      case config.llm_provider.to_sym
+      when :cursor then CursorLLM.new(config).chat(system: system, messages: messages)
+      when :anthropic then anthropic(system, messages, max_tokens)
+      else openai(system, messages, max_tokens)
+      end
     end
 
     def label

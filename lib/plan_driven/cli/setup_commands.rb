@@ -7,7 +7,7 @@ module PlanDriven
       PROMPTS = {
         "openai_api_key" => "OpenAI API key (drafting plans and tickets)",
         "anthropic_api_key" => "Anthropic API key (optional, if you draft with Claude)",
-        "cursor_api_key" => "Cursor API key (cloud agents; cursor.com/dashboard -> Integrations)",
+        "cursor_api_key" => "Cursor API key (cloud agents, and drafting with llm_provider :cursor)",
         "github_token" => "GitHub token with repo scope (issues, pull requests, merge)"
       }.freeze
 
@@ -32,8 +32,9 @@ module PlanDriven
         ui.heading "plan-driven #{PlanDriven::VERSION}"
         check_application
         ui.muted "LLM: #{LLM.new.label}"
+        check_cursor_llm
         Credentials::KEYS.each_key do |name|
-          next if name == unused_llm_key
+          next if unused_llm_key?(name)
 
           source = Credentials.source(name)
           source ? ui.success("#{name}: #{source}") : ui.warn("#{name}: not set")
@@ -69,8 +70,16 @@ module PlanDriven
         end
       end
 
-      def unused_llm_key
-        PlanDriven.configuration.llm_provider.to_sym == :anthropic ? "openai_api_key" : "anthropic_api_key"
+      def unused_llm_key?(name)
+        %w[openai_api_key anthropic_api_key].include?(name) && name != PlanDriven.configuration.llm_key_name.to_s
+      end
+
+      def check_cursor_llm
+        config = PlanDriven.configuration
+        return unless config.llm_provider.to_sym == :cursor
+
+        ok, detail = CursorLLM.new(config).check
+        ok ? ui.success("Cursor SDK: #{detail}") : ui.error("Cursor SDK: #{detail}")
       end
 
       def check_cursor

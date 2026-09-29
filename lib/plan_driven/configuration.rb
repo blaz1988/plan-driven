@@ -10,11 +10,15 @@ module PlanDriven
   #       config.cucumber = true
   #     end
   class Configuration
-    DEFAULT_MODELS = { openai: "gpt-4.1", anthropic: "claude-sonnet-4-5" }.freeze
+    DEFAULT_MODELS = { openai: "gpt-4.1", anthropic: "claude-sonnet-4-5", cursor: "claude-opus-5-5" }.freeze
+    KEY_FOR_PROVIDER = { openai: :openai_api_key, anthropic: :anthropic_api_key, cursor: :cursor_api_key }.freeze
 
     # Planning and ticket writing are the steps where a stronger model pays for itself.
     attr_accessor :llm_provider, :llm_api_base, :temperature, :request_timeout, :max_repair_attempts
     attr_writer :llm_model
+
+    # llm_provider :cursor runs the Cursor SDK under Node 22.13+.
+    attr_accessor :node_command, :cursor_sdk_path
 
     # Who has to approve what before the next phase can start.
     attr_accessor :plan_approvals, :ticket_approvals
@@ -55,6 +59,8 @@ module PlanDriven
       @temperature = 0.2
       @request_timeout = 180
       @max_repair_attempts = 2
+      @node_command = ENV.fetch("PLAN_DRIVEN_NODE", "node")
+      @cursor_sdk_path = nil
 
       @plan_approvals = %w[review]
       @ticket_approvals = %w[review]
@@ -90,7 +96,11 @@ module PlanDriven
     end
 
     def llm_api_key
-      Credentials.fetch(llm_provider.to_sym == :anthropic ? :anthropic_api_key : :openai_api_key)
+      Credentials.fetch(llm_key_name)
+    end
+
+    def llm_key_name
+      KEY_FOR_PROVIDER.fetch(llm_provider.to_sym, :openai_api_key)
     end
 
     def root_path
