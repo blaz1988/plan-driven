@@ -49,7 +49,19 @@ module PlanDriven
         delivery.refresh(plan)
         ui.heading "#{plan.key} #{plan.title}: #{plan.status.tr("_", " ")}"
         show_tickets(plan.tickets)
-        ui.muted Workflow::PLAN_DESCRIPTIONS[plan.status]
+        ui.muted(plan.status == "in_development" ? development_hint(plan) : Workflow::PLAN_DESCRIPTIONS[plan.status])
+      end
+
+      def development_hint(plan)
+        tickets = plan.tickets.to_a
+        waiting = tickets.find { |t| t.status == "pr_open" }
+        return "Next: `plan-driven review #{waiting.reference}`" if waiting
+
+        approved = tickets.find { |t| t.status == "pr_approved" }
+        return "Next: `plan-driven merge #{approved.reference}`" if approved
+        return "Next: `plan-driven develop #{plan.key}`" if delivery.startable(plan).any?
+
+        Workflow::PLAN_DESCRIPTIONS[plan.status]
       end
 
       def cmd_review(reference = nil)

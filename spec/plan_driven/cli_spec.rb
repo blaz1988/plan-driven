@@ -73,7 +73,9 @@ RSpec.describe PlanDriven::CLI do
     expect(run("merge", "PD-1/T1", input: "yes\n").last).to include("approved by Grace", "Not merged.")
     expect(github.merged).to be_empty
 
+    expect(run("status", "PD-1").last).to include("Next: `plan-driven merge PD-1/T1`")
     expect(run("merge", "PD-1/T1", input: "T1\n").last).to include("PD-1/T1 merged (merge5s)", "Now ready: T2, T3")
+    expect(run("status", "PD-1").last).to include("Next: `plan-driven develop PD-1`")
   end
 
   it "shows guard problems and exits 1" do
