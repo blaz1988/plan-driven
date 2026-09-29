@@ -24,6 +24,8 @@ RSpec.describe PlanDriven::Guards::PrGuard do
     report = check
     expect(report.errors).to eq([])
     expect(report.warnings).to eq([])
+    expect(report.passes).to include("Refers to #{plan.key}/T3 and closes #13", "4 files, 84 changed lines (limit 800)",
+                                     "2 spec and feature files changed", "CI is green: CI")
   end
 
   it "warns when the PR doesn't reference the ticket or close its issue" do

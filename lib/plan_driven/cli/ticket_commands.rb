@@ -67,7 +67,9 @@ module PlanDriven
       def cmd_review(reference = nil)
         ticket = find_ticket(reference)
         ui.say "Reviewing #{ticket.pr_url}"
-        ui.report(delivery.review(ticket), ok_message: "The pull request passes every check")
+        report = delivery.review(ticket)
+        report.passes.each { |message| ui.say "  ✓ #{message}" }
+        ui.report(report, ok_message: "The pull request passes every check")
       end
 
       def cmd_approve_pr(reference = nil)

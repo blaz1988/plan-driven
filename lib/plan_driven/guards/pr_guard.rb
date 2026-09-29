@@ -38,22 +38,27 @@ module PlanDriven
         text = "#{@pull["title"]}\n#{@pull["body"]}"
         report.warning("The PR doesn't mention #{@ticket.reference}") unless text.include?(@ticket.reference)
         number = @ticket.issue_number
-        return if number.nil? || text.match?(/(close[sd]?|fix(e[sd])?|resolve[sd]?) ##{number}\b/i)
-
-        report.warning("The PR doesn't close issue ##{number}")
+        if number && !text.match?(/(close[sd]?|fix(e[sd])?|resolve[sd]?) ##{number}\b/i)
+          report.warning("The PR doesn't close issue ##{number}")
+        elsif text.include?(@ticket.reference)
+          report.pass(["Refers to #{@ticket.reference}", ("closes ##{number}" if number)].compact.join(" and "))
+        end
       end
 
       def check_size(report)
         changed = @files.sum { |file| file["additions"].to_i + file["deletions"].to_i }
-        return if changed <= @config.max_pr_changed_lines
+        limit = @config.max_pr_changed_lines
+        return report.pass("#{@files.size} files, #{changed} changed lines (limit #{limit})") if changed <= limit
 
-        report.error("The PR changes #{changed} lines, above the limit of #{@config.max_pr_changed_lines}")
+        report.error("The PR changes #{changed} lines, above the limit of #{limit}")
       end
 
       def check_specs(report)
         return unless @config.require_specs_in_pr
         return if @ticket.kind == "docs"
-        return if paths.any? { |path| spec_path?(path) }
+
+        specs = paths.count { |path| spec_path?(path) }
+        return report.pass("#{specs} spec and feature files changed") if specs.positive?
 
         report.error("The PR has no spec or feature changes")
       end
@@ -65,6 +70,9 @@ module PlanDriven
                        "schema changes belong in their own migration ticket")
         end
         check_migration_scope(report)
+        if added.empty? && @ticket.kind != "migration"
+          report.pass("No migrations, so the schema stays with the migration tickets")
+        end
         return if added.empty? || paths.any? { |path| path.match?(%r{\Adb/(schema\.rb|structure\.sql)\z}) }
 
         report.warning("A migration was added but db/schema.rb didn't change")
@@ -74,7 +82,9 @@ module PlanDriven
         return unless @ticket.kind == "migration"
 
         app_changes = paths.reject { |path| path.match?(MIGRATION_PATHS) || spec_path?(path) }
-        report.warning("A migration ticket also changes #{app_changes.first(3).join(", ")}") if app_changes.any?
+        return report.pass("A migration ticket, and it only changes db/ and tests") if app_changes.empty?
+
+        report.warning("A migration ticket also changes #{app_changes.first(3).join(", ")}")
       end
 
       def check_acceptance_scenarios(report)
@@ -91,6 +101,10 @@ module PlanDriven
 
           report.error("Acceptance criterion #{index + 1} has no scenario tagged #{@ticket.feature_tag} #{tag}")
         end
+        count = @ticket.criteria.size
+        return unless report.errors.none? { |message| message.start_with?("Acceptance criterion") }
+
+        report.pass("All #{count} acceptance criteria have a scenario tagged #{@ticket.feature_tag} @ac-N")
       end
 
       def check_ci(report)
@@ -102,6 +116,9 @@ module PlanDriven
         failed = @checks.select { |check| check["status"] == "completed" && !CHECK_OK.include?(check["conclusion"]) }
         failed.each { |check| report.error("CI check \"#{check["name"]}\" #{check["conclusion"]}") }
         report.warning("#{pending.size} CI check(s) still running") if pending.any?
+        return unless pending.empty? && failed.empty?
+
+        report.pass("CI is green: #{@checks.map { |check| check["name"] }.join(", ")}")
       end
 
       def spec_path?(path)
