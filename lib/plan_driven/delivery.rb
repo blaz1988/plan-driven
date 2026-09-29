@@ -281,18 +281,29 @@ module PlanDriven
     end
 
     def issue_body(ticket)
+      criteria = ticket.criteria.each_with_index.map { |criterion, index| "- [ ] #{index + 1}. #{unlinked(criterion)}" }
+      notes = ticket.implementation_notes.presence
       <<~MD
-        #{ticket.story}
+        #{unlinked(ticket.story)}
 
-        #{ticket.description}
+        #{unlinked(ticket.description)}
 
         ### Acceptance criteria
-        #{ticket.criteria.each_with_index.map { |criterion, index| "- [ ] #{index + 1}. #{criterion}" }.join("\n")}
-        #{"\n### Implementation notes\n#{ticket.implementation_notes}\n" if ticket.implementation_notes.present?}
+        #{criteria.join("\n")}
+        #{"\n### Implementation notes\n#{unlinked(notes)}\n" if notes}
         ---
         Plan #{ticket.plan.key}: #{ticket.plan.title} · kind: #{ticket.kind} · estimate: #{ticket.estimate}
         #{"· depends on #{ticket.dependencies.join(", ")}" if ticket.dependencies.any?}
       MD
+    end
+
+    # GitHub links "#1" and "@name" anywhere outside code, so "You're #1 on the waitlist" would point
+    # at an unrelated pull request and "(@event)" would mention a user. An empty comment breaks
+    # the link and renders nothing.
+    def unlinked(text)
+      text.to_s.split(/(```.*?```|`[^`\n]*`)/m).each_with_index.map do |part, index|
+        index.odd? ? part : part.gsub(/(?<![\w&])([#@])(?=\w)/, '\1<!-- -->')
+      end.join
     end
 
     def replace_tickets(plan, result)

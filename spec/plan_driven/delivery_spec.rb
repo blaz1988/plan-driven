@@ -135,6 +135,13 @@ RSpec.describe PlanDriven::Delivery do
       expect(github.issues).to be_empty
       expect(plan.tickets.map(&:status).uniq).to eq(["approved"])
     end
+
+    it "keeps numbers in ticket text from linking to other issues" do
+      plan = create_ticketed_plan(status: "ticketed", ticket_status: "draft")
+      plan.tickets.first.update!(acceptance_criteria: ["The fourth person sees \"You're #1 on the waitlist\" (@event), `#2` stays, ana@gather.test"])
+      delivery(github: github).approve_tickets(plan, role: "review")
+      expect(github.issues.first[:body]).to include("You're #<!-- -->1 on the waitlist\" (@<!-- -->event), `#2` stays, ana@gather.test")
+    end
   end
 
   describe "development" do
