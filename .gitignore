@@ -1,0 +1,12 @@
+/.bundle/
+/coverage/
+/doc/
+/pkg/
+/tmp/
+*.gem
+
+# A library resolves dependencies fresh in CI.
+/Gemfile.lock
+
+# Per-Rails lockfiles from bin/matrix.
+gemfiles/*.lock

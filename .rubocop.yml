@@ -1,0 +1,95 @@
+AllCops:
+  TargetRubyVersion: 3.1
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - "tmp/**/*"
+    - "demo/**/*"
+    - "vendor/**/*"
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Style/StringLiteralsInInterpolation:
+  EnforcedStyle: double_quotes
+
+Style/Documentation:
+  Enabled: false
+
+Metrics/MethodLength:
+  Max: 25
+  Exclude:
+    - "lib/plan_driven/configuration.rb"
+
+# CLI commands read top to bottom as the conversation they print, and the Markdown and
+# Gherkin readers are line-by-line state machines. Splitting them would hide the flow.
+Metrics/AbcSize:
+  Max: 30
+  Exclude:
+    - "lib/plan_driven/cli/*_commands.rb"
+    - "lib/plan_driven/renderer/html.rb"
+    - "lib/plan_driven/gherkin.rb"
+
+Metrics/CyclomaticComplexity:
+  Max: 12
+  Exclude:
+    - "lib/plan_driven/renderer/html.rb"
+
+Metrics/PerceivedComplexity:
+  Max: 12
+  Exclude:
+    - "lib/plan_driven/renderer/html.rb"
+
+Metrics/ClassLength:
+  Max: 300
+
+Metrics/ModuleLength:
+  Max: 220
+
+Metrics/BlockLength:
+  Exclude:
+    - "spec/**/*"
+    - "*.gemspec"
+
+# Specs describe behaviour with data tables; that is what they are for.
+Lint/ConstantDefinitionInBlock:
+  Exclude:
+    - "spec/**/*"
+
+# The read-only allowlist is data, but it belongs next to the code that enforces it.
+Metrics/CollectionLiteralLength:
+  Enabled: false
+
+Layout/LineLength:
+  Max: 120
+  Exclude:
+    - "spec/**/*"
+
+# Keyword arguments on a value object read as named fields, not as a long
+# positional parameter list.
+Metrics/ParameterLists:
+  CountKeywordArgs: false
+
+Naming/MethodParameterName:
+  AllowedNames:
+    - ui
+    - io
+    - id
+    - to
+    - on
+    - at
+    - by
+    - pr
+
+Naming/PredicateMethod:
+  AllowedMethods:
+    - run
+
+# Ruby 3.2+ autoloads the Set constant, but Enumerable#to_set only exists once
+# the library has actually been required.
+Lint/RedundantRequireStatement:
+  Enabled: false
+
+Style/ReturnNil:
+  Enabled: true
+  EnforcedStyle: return

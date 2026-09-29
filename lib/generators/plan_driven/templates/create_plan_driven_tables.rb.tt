@@ -1,0 +1,73 @@
+class CreatePlanDrivenTables < ActiveRecord::Migration[<%= ActiveRecord::Migration.current_version %>]
+  def change
+    create_table :plan_driven_plans do |t|
+      t.string :key, null: false
+      t.string :title, null: false
+      t.string :status, null: false, default: "draft"
+      t.integer :revision, null: false, default: 1
+      t.json :interview
+      t.json :sections
+      t.json :guard_report
+      t.string :created_by
+      t.timestamps
+    end
+    add_index :plan_driven_plans, :key, unique: true
+
+    create_table :plan_driven_tickets do |t|
+      t.references :plan, null: false, foreign_key: { to_table: :plan_driven_plans }
+      t.string :key, null: false
+      t.integer :position, null: false, default: 0
+      t.string :title, null: false
+      t.string :kind, null: false, default: "code"
+      t.string :ticket_type, null: false, default: "TASK"
+      t.text :story
+      t.text :description
+      t.json :acceptance_criteria
+      t.text :implementation_notes
+      t.integer :estimate
+      t.json :depends_on
+      t.json :touches
+      t.string :status, null: false, default: "draft"
+      t.integer :issue_number
+      t.string :agent_id
+      t.string :agent_run_id
+      t.string :agent_url
+      t.string :branch
+      t.string :pr_url
+      t.integer :pr_number
+      t.string :merged_sha
+      t.json :guard_report
+      t.timestamps
+    end
+    add_index :plan_driven_tickets, %i[plan_id key], unique: true
+
+    create_table :plan_driven_approvals do |t|
+      t.references :approvable, polymorphic: true, null: false
+      t.string :role, null: false
+      t.string :decision, null: false
+      t.string :actor, null: false
+      t.integer :revision
+      t.text :note
+      t.timestamps
+    end
+
+    create_table :plan_driven_events do |t|
+      t.references :plan, null: false, foreign_key: { to_table: :plan_driven_plans }
+      t.references :ticket, foreign_key: { to_table: :plan_driven_tickets }
+      t.string :name, null: false
+      t.string :actor, null: false
+      t.json :payload
+      t.datetime :created_at, null: false
+    end
+
+    create_table :plan_driven_evidence_runs do |t|
+      t.references :plan, null: false, foreign_key: { to_table: :plan_driven_plans }
+      t.string :kind, null: false
+      t.string :command
+      t.string :status, null: false
+      t.string :commit_sha
+      t.json :results
+      t.datetime :created_at, null: false
+    end
+  end
+end
