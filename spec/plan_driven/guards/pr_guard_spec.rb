@@ -28,6 +28,12 @@ RSpec.describe PlanDriven::Guards::PrGuard do
                                      "2 spec and feature files changed", "CI is green: CI")
   end
 
+  it "warns when the branch is behind the base branch" do
+    report = check(pull: pull.merge("base" => { "ref" => "main" }), behind: 2)
+    expect(report.warnings).to include(a_string_matching(/2 commit\(s\) behind main, so CI ran without them/))
+    expect(check(pull: pull.merge("base" => { "ref" => "main" })).passes).to include("Up to date with main")
+  end
+
   it "warns when the PR doesn't reference the ticket or close its issue" do
     report = check(pull: { "title" => "Backfill", "body" => "" })
     expect(report.warnings).to include("The PR doesn't mention #{plan.key}/T3", "The PR doesn't close issue #13")

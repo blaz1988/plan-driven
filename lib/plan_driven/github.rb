@@ -56,6 +56,15 @@ module PlanDriven
       end
     end
 
+    # How many commits the base branch has that the pull request's branch doesn't.
+    def behind_by(pull)
+      base = pull.dig("base", "ref")
+      head = pull.dig("head", "sha")
+      return 0 unless base && head
+
+      request(:get, "/repos/#{repository}/compare/#{base}...#{head}")["behind_by"].to_i
+    end
+
     def file(path, ref:)
       data = request(:get, "/repos/#{repository}/contents/#{path}?ref=#{ref}")
       Base64.decode64(data["content"].to_s)

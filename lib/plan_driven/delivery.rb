@@ -153,7 +153,7 @@ module PlanDriven
       features = feature_files(files, pull.dig("head", "sha"))
       checks = github.checks(pull.dig("head", "sha"))
       report = Guards::PrGuard.new(ticket, pull: pull, files: files, checks: checks, features: features,
-                                           config: config).call
+                                           behind: github.behind_by(pull), config: config).call
       ticket.update!(guard_report: report.to_h)
       ticket.plan.log!("ticket.reviewed", actor: actor, ticket: ticket, errors: report.errors.size,
                                           warnings: report.warnings.size)

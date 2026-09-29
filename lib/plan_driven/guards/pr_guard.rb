@@ -8,12 +8,13 @@ module PlanDriven
       MIGRATION_PATHS = %r{\Adb/}
       CHECK_OK = %w[success neutral skipped].freeze
 
-      def initialize(ticket, pull:, files:, checks:, features: {}, config: PlanDriven.configuration)
+      def initialize(ticket, pull:, files:, checks:, features: {}, behind: 0, config: PlanDriven.configuration)
         @ticket = ticket
         @pull = pull || {}
         @files = files
         @checks = checks
         @features = features
+        @behind = behind
         @config = config
       end
 
@@ -25,6 +26,7 @@ module PlanDriven
         check_migrations(report)
         check_acceptance_scenarios(report) if @config.cucumber && @ticket.kind != "docs"
         check_ci(report)
+        check_base(report)
         report
       end
 
@@ -119,6 +121,15 @@ module PlanDriven
         return unless pending.empty? && failed.empty?
 
         report.pass("CI is green: #{@checks.map { |check| check["name"] }.join(", ")}")
+      end
+
+      # Another ticket merged since the agent branched: CI passed without those changes.
+      def check_base(report)
+        base = @pull.dig("base", "ref") || "the base branch"
+        return report.pass("Up to date with #{base}") if @behind.zero?
+
+        report.warning("The branch is #{@behind} commit(s) behind #{base}, so CI ran without them. " \
+                       "Ask the agent to merge #{base} and run the checks again (`plan-driven feedback`).")
       end
 
       def spec_path?(path)

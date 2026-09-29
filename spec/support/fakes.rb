@@ -84,7 +84,7 @@ end
 
 class FakeGitHub
   attr_reader :issues, :reviews, :merged, :comments, :check_results
-  attr_accessor :pulls, :files, :contents
+  attr_accessor :pulls, :files, :contents, :behind
 
   def initialize
     @issues = []
@@ -95,6 +95,7 @@ class FakeGitHub
     @files = {}
     @check_results = {}
     @contents = {}
+    @behind = 0
   end
 
   def repo_url = "https://github.com/acme/app"
@@ -111,6 +112,7 @@ class FakeGitHub
   def pull_files(number) = @files.fetch(number, [])
   def checks(sha) = @check_results.fetch(sha, [{ "name" => "CI", "status" => "completed", "conclusion" => "success" }])
   def file(path, ref:) = @contents.fetch([path, ref], "")
+  def behind_by(_pull) = @behind
 
   def review(number, body:, event: "COMMENT")
     @reviews << { number: number, body: body, event: event }
