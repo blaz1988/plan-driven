@@ -45,6 +45,17 @@ RSpec.describe PlanDriven::Guards::MigrationGuard do
     expect(report.warnings).to include(a_string_matching(/NOT NULL change on existing table forms/))
   end
 
+  it "doesn't mistake a description of the current schema for a change" do
+    text = "### Current schema\nforms: `id`, `name` (string, not null).\n\n" \
+           "New table: `snapshots` with `form_id` bigint NOT NULL, foreign key to `forms`."
+    expect(check(text).warnings).to eq([])
+  end
+
+  it "warns about NOT NULL added to an existing table in prose" do
+    report = check("Add a `locale` string column, NOT NULL, to the `forms` table.")
+    expect(report.warnings).to include(a_string_matching(/NOT NULL change on existing table forms/))
+  end
+
   it "accepts NOT NULL with a default" do
     expect(check("### fields\nAdd `position` integer, null: false, default: 0.").warnings).to eq([])
   end
