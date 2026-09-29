@@ -11,7 +11,12 @@ module PlanDriven
       NOT_NULL_SAFE = /default|backfill|nullable first|after (the )?backfill|validate/i
       INDEX = /\badd_index\b|\bindex(es)?\b/i
       CONCURRENT = /concurrent|algorithm:\s*:concurrently|disable_ddl_transaction/i
-      NEW_TABLE = /(?:create_table\s+:|new table:?\s*`?)([a-z][a-z0-9_]+)/i
+      NEW_TABLE = /
+        create_table\s+[:"']?([a-z][a-z0-9_]+)
+        | new\s+table:?\s*`?([a-z][a-z0-9_]+)
+        | create\s+(?:a\s+|the\s+)?(?:new\s+)?`([a-z][a-z0-9_]+)`\s+table
+        | create\s+(?:a\s+|the\s+)?(?:new\s+)?table\s+`?([a-z][a-z0-9_]+)
+      /ix
 
       def initialize(text, schema:)
         @text = text.to_s
@@ -29,7 +34,7 @@ module PlanDriven
       end
 
       def new_tables
-        @text.scan(NEW_TABLE).flatten.map(&:downcase).uniq
+        @text.scan(NEW_TABLE).flatten.compact.map(&:downcase).uniq
       end
 
       private

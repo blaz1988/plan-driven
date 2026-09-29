@@ -61,6 +61,15 @@ RSpec.describe PlanDriven::Guards::TicketGuard do
     expect(errors).to include(a_string_matching(/Dependencies form a cycle: T1 -> T4 -> T2 -> T1|cycle/))
   end
 
+  it "rejects code tickets split by layer instead of behaviour" do
+    layered = normalized_tickets + [
+      { "key" => "T6", "title" => "Model: Add Question", "kind" => "code" },
+      { "key" => "T7", "title" => "Controller: Add QuestionsController", "kind" => "code" }
+    ].map { |t| t.merge("type" => "TASK", "description" => "d", "acceptance_criteria" => ["It works for users"], "estimate" => 2, "depends_on" => ["T1"], "touches" => ["forms"]) }
+    expect(check(layered).errors).to include(a_string_matching(/T6, T7 split the work by layer/))
+    expect(check(layered.first(6)).errors).to eq([])
+  end
+
   describe "expand before contract" do
     it "requires code that touches a table to build on its migration" do
       expect(check(with("T2", "depends_on" => [])).errors)

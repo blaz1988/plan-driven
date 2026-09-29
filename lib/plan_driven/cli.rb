@@ -26,7 +26,7 @@ module PlanDriven
       "approve" => ["PLAN", "Approve the plan (--as ROLE, --note)"],
       "reject" => ["PLAN", "Send the plan back with --note (--as ROLE)"],
       "pdf" => ["PLAN", "Write the plan to docs/plans as Markdown, HTML and PDF"],
-      "tickets" => ["PLAN", "Draft tickets from the approved plan"],
+      "tickets" => ["PLAN [\"instruction\"]", "Draft tickets from the approved plan, or redraft them"],
       "approve-tickets" => ["PLAN", "Approve the tickets (--as ROLE); creates GitHub issues"],
       "prompt" => ["PLAN/TICKET", "Show what the agent will be told"],
       "develop" => ["PLAN [TICKET...]", "Hand ready tickets to Cursor cloud agents"],

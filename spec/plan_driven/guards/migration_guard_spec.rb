@@ -68,7 +68,9 @@ RSpec.describe PlanDriven::Guards::MigrationGuard do
   end
 
   it "lists new tables from the text" do
-    guard = described_class.new("New table: `snapshots`\ncreate_table :form_versions", schema: schema)
-    expect(guard.new_tables).to eq(%w[snapshots form_versions])
+    text = "New table: `snapshots`\ncreate_table :form_versions\n- Create `project_questions` table:\n" \
+           "Create a new table `project_answers`\ncreate_table \"tags\""
+    guard = described_class.new(text, schema: schema)
+    expect(guard.new_tables).to eq(%w[snapshots form_versions project_questions project_answers tags])
   end
 end

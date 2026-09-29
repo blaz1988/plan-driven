@@ -7,6 +7,7 @@ module PlanDriven
     class TicketGuard
       BUILDS_ON_MIGRATION = %w[dual_write backfill code switch cleanup].freeze
       MAX_CRITERIA = 8
+      LAYER_TITLE = /\A(models?|services?|controllers?|views?|polic(y|ies)|ui|api|routes?|specs?|tests?)\s*:/i
 
       def initialize(tickets, plan_sections:, schema:, config: PlanDriven.configuration)
         @tickets = tickets
@@ -23,6 +24,7 @@ module PlanDriven
         end
 
         @tickets.each { |ticket| check_ticket(ticket, report) }
+        check_slicing(report)
         check_dependencies(report)
         check_order(report) if report.ok?
         check_coverage(report)
@@ -30,6 +32,17 @@ module PlanDriven
       end
 
       private
+
+      # A model ticket, then a controller ticket, then a view ticket: none of them does anything
+      # a user can see, so no scenario can prove its criteria.
+      def check_slicing(report)
+        layered = @tickets.select { |ticket| ticket["kind"] == "code" && ticket["title"].to_s.match?(LAYER_TITLE) }
+        return if layered.size < 2
+
+        report.error("#{layered.map { |t| t["key"] }.join(", ")} split the work by layer (model, service, " \
+                     "controller, view). Split code tickets by behaviour instead: each one delivers one thing a " \
+                     "user can do, with its model, service, controller, view and specs together")
+      end
 
       def check_ticket(ticket, report)
         label = ticket["key"]

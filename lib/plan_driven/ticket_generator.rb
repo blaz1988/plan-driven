@@ -26,8 +26,10 @@ module PlanDriven
       @config = config
     end
 
-    def generate(plan)
-      messages = [{ role: "user", content: request(plan) }]
+    def generate(plan, instruction: nil)
+      content = request(plan)
+      content += "\n\nThe reviewer asks for this breakdown: #{instruction}" if instruction.present?
+      messages = [{ role: "user", content: content }]
       attempts = 0
 
       loop do
@@ -65,6 +67,9 @@ module PlanDriven
         writes, backfills, switching reads, then cleanup that removes. A ticket may only depend
         on tickets before it. Keep tickets small: at most #{@config.max_estimate} points on the
         scale #{@config.estimate_scale.join(", ")}. Schema changes get their own migration tickets.
+        Split code by behaviour, not by layer: each code ticket delivers one thing a user can do,
+        with its model, service, controller, view and specs together, so its acceptance criteria
+        can be proven by Cucumber scenarios.
 
         Reply with one JSON object: {"tickets": [ ... ]}. Each ticket has:
         #{FIELDS}

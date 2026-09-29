@@ -30,6 +30,12 @@ RSpec.describe PlanDriven::TicketGenerator do
     expect(llm.calls.last[:messages].last[:content]).to include("T2 (dual_write) touches forms but doesn't depend on T1")
   end
 
+  it "passes the reviewer's instruction on" do
+    llm = FakeLLM.new(tickets_reply)
+    described_class.new(llm: llm, schema: schema).generate(plan, instruction: "one ticket per user action")
+    expect(llm.calls.first[:messages].first[:content]).to end_with("The reviewer asks for this breakdown: one ticket per user action")
+  end
+
   it "asks again for a reply without tickets" do
     expect(generate(FakeLLM.new({ "items" => [] }, tickets_reply)).report).to be_ok
   end

@@ -4,10 +4,10 @@ module PlanDriven
   class CLI
     # Tickets, agents, pull requests, evidence and the report.
     module TicketCommands
-      def cmd_tickets(reference = nil)
+      def cmd_tickets(reference = nil, *instruction)
         plan = find_plan(reference)
         ui.say "Drafting tickets for #{plan.key} with #{LLM.new.label}..."
-        result = delivery.draft_tickets(plan)
+        result = delivery.draft_tickets(plan, instruction: instruction.join(" ").presence)
         ui.report(result.report, ok_message: "Tickets pass every check")
         show_tickets(plan.tickets)
         ui.say "Next: review them in docs/plans/#{plan.slug}/plan.pdf, then `plan-driven approve-tickets #{plan.key}`."

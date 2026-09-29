@@ -74,9 +74,9 @@ module PlanDriven
 
     # -- Tickets ----------------------------------------------------------------------------------
 
-    def draft_tickets(plan)
+    def draft_tickets(plan, instruction: nil)
       require_status!(plan, %w[approved ticketed])
-      result = TicketGenerator.new(llm: llm, schema: schema, config: config).generate(plan)
+      result = TicketGenerator.new(llm: llm, schema: schema, config: config).generate(plan, instruction: instruction)
       raise GuardError, result.report.errors unless result.report.ok?
 
       replace_tickets(plan, result)
