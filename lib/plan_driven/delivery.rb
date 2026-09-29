@@ -184,12 +184,8 @@ module PlanDriven
 
     def merge(ticket)
       require_ticket_status!(ticket, %w[pr_approved])
-      report = review(ticket)
-      raise GuardError, report.errors unless report.ok?
-      raise GuardError, ["CI is still running; wait for it to finish"] if report.warnings.any? do |w|
-        w.include?("still running")
-      end
-
+      require_mergeable!(ticket)
+      github.ready_for_review(ticket.pr_number) if github.pull(ticket.pr_number)["draft"]
       result = github.merge(ticket.pr_number, title: "#{ticket.title} (#{ticket.reference})",
                                               method: config.merge_method)
       ticket.update!(merged_sha: result["sha"])
@@ -211,6 +207,14 @@ module PlanDriven
     end
 
     private
+
+    def require_mergeable!(ticket)
+      report = review(ticket)
+      raise GuardError, report.errors unless report.ok?
+      return unless report.warnings.any? { |warning| warning.include?("still running") }
+
+      raise GuardError, ["CI is still running; wait for it to finish"]
+    end
 
     def decide(record, role:, decision:, note:)
       plan = record.is_a?(Plan) ? record : record.plan

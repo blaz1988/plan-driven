@@ -192,6 +192,18 @@ RSpec.describe PlanDriven::Delivery do
       expect { flow.merge(ticket.reload) }.to raise_error(PlanDriven::GuardError, /CI is still running/)
     end
 
+    it "marks an agent's draft pull request ready before merging it" do
+      ticket = flow.develop(plan).first
+      agents.finish(ticket)
+      open_pr(ticket, 100)
+      flow.refresh(plan)
+      flow.approve_pr(ticket.reload)
+      github.pulls[100] = github.pull(100).merge("draft" => true)
+      flow.merge(ticket.reload)
+      expect(github.merged.map { |merge| merge[:number] }).to eq([100])
+      expect(ticket.reload.status).to eq("merged")
+    end
+
     it "notices a pull request merged on GitHub" do
       ticket = flow.develop(plan).first
       agents.finish(ticket)

@@ -69,6 +69,19 @@ module PlanDriven
       request(:put, "/repos/#{repository}/pulls/#{number}/merge", { commit_title: title, merge_method: method })
     end
 
+    # Agents open draft pull requests, and GitHub won't merge a draft. REST can't undraft; GraphQL can.
+    def ready_for_review(number)
+      node_id = pull(number)["node_id"]
+      data = request(:post, "/graphql", {
+                       query: "mutation($id: ID!) { markPullRequestReadyForReview(input: {pullRequestId: $id}) " \
+                              "{ pullRequest { isDraft } } }",
+                       variables: { id: node_id }
+                     })
+      raise ProviderError, "GitHub GraphQL: #{data["errors"].map { |e| e["message"] }.join("; ")}" if data["errors"]
+
+      data
+    end
+
     def self.pr_number(url)
       url.to_s[%r{/pull/(\d+)}, 1]&.to_i
     end

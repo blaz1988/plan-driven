@@ -116,7 +116,13 @@ class FakeGitHub
     @reviews << { number: number, body: body, event: event }
   end
 
+  def ready_for_review(number)
+    @pulls[number] = pull(number).merge("draft" => false)
+  end
+
   def merge(number, title:, method:)
+    raise PlanDriven::ProviderError, "Pull Request is still a draft" if pull(number)["draft"]
+
     @merged << { number: number, title: title, method: method }
     { "sha" => "merge#{number}sha" }
   end
