@@ -16,6 +16,8 @@ module PlanDriven
         | new\s+table:?\s*`?([a-z][a-z0-9_]+)
         | create\s+(?:a\s+|the\s+)?(?:new\s+)?`([a-z][a-z0-9_]+)`\s+table
         | create\s+(?:a\s+|the\s+)?(?:new\s+)?table\s+`?([a-z][a-z0-9_]+)
+        | create:?\s+`([a-z][a-z0-9_]+)`(?!\s+(?:column|index))
+        | _create_([a-z][a-z0-9_]+)\.rb
       /ix
 
       def initialize(text, schema:)

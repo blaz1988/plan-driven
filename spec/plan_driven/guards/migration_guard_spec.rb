@@ -84,4 +84,10 @@ RSpec.describe PlanDriven::Guards::MigrationGuard do
     guard = described_class.new(text, schema: schema)
     expect(guard.new_tables).to eq(%w[snapshots form_versions project_questions project_answers tags])
   end
+
+  it "lists a table named in a step heading or a migration file" do
+    text = "### Step 1 — Expand: create `rsvps`\nMigration file: `db/migrate/<timestamp>_create_badges.rb`.\n" \
+           "Create `status` column"
+    expect(described_class.new(text, schema: schema).new_tables).to eq(%w[rsvps badges])
+  end
 end
