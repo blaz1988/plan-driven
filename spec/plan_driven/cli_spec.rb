@@ -124,6 +124,18 @@ RSpec.describe PlanDriven::CLI do
     expect(text).not_to include("anthropic_api_key")
   end
 
+  it "reads names and answers typed under a non-UTF-8 locale as text" do
+    stub_const("ENV", ENV.to_h.merge("PLAN_DRIVEN_ACTOR" => (+"Ivan Blažević").force_encoding(Encoding::BINARY)))
+    flow = delivery(llm: llm, actor: PlanDriven.actor)
+    answers = interview_input.sub("Team Jarvis", "Tim Čačić").b
+    status = described_class.new(input: StringIO.new(answers), output: output, delivery: flow, boot: false)
+                            .run(%w[new Q&A])
+    expect(status).to eq(0)
+    plan = PlanDriven::Plan.last
+    expect([plan.created_by, plan.section("who")]).to eq(["Ivan Blažević", "Tim Čačić"])
+    expect(root.join("docs/plans/#{plan.slug}/plan.md").read(encoding: "UTF-8")).to include("Created by Ivan Blažević")
+  end
+
   it "writes the audit log" do
     plan = create_plan(status: "in_review")
     flow.approve_plan(plan, role: "review")

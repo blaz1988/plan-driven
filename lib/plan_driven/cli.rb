@@ -44,8 +44,11 @@ module PlanDriven
 
     NO_APP = %w[configure doctor help version].freeze
 
+    # Plans are UTF-8 whatever the terminal's locale says, so answers typed with č or ž under
+    # LANG=C are read as text, not bytes.
     def self.start(argv, **options)
-      new(**options).run(argv)
+      Encoding.default_external = Encoding::UTF_8
+      new(**options).run(argv.map { |arg| PlanDriven.utf8(arg) })
     end
 
     def initialize(input: $stdin, output: $stdout, delivery: nil, boot: true)

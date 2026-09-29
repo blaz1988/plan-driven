@@ -45,15 +45,22 @@ module PlanDriven
       @configuration = nil
     end
 
+    # Names like "Blažević" arrive tagged with the locale's encoding, which under LANG=C is
+    # binary, and binary strings can't be joined with the UTF-8 text of a plan.
     def actor
-      ENV["PLAN_DRIVEN_ACTOR"].presence || git_identity || ENV.fetch("USER", "unknown")
+      name = ENV["PLAN_DRIVEN_ACTOR"].presence || git_identity || ENV.fetch("USER", "unknown")
+      utf8(name)
+    end
+
+    def utf8(text)
+      text.to_s.dup.force_encoding(Encoding::UTF_8).scrub
     end
 
     private
 
     def git_identity
-      name = `git config user.name 2>/dev/null`.strip
-      email = `git config user.email 2>/dev/null`.strip
+      name = utf8(`git config user.name 2>/dev/null`).strip
+      email = utf8(`git config user.email 2>/dev/null`).strip
       return if name.empty? && email.empty?
 
       email.empty? ? name : "#{name} <#{email}>".strip

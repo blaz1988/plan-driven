@@ -38,7 +38,7 @@ module PlanDriven
 
       def ask(prompt, default: nil)
         output.print(default ? "#{prompt} [#{default}] " : "#{prompt} ")
-        answer = input.gets.to_s.strip
+        answer = read_line.strip
         answer.empty? ? default.to_s : answer
       end
 
@@ -49,7 +49,7 @@ module PlanDriven
         lines = []
         loop do
           output.print "  > "
-          line = input.gets
+          line = read_line(nil)
           break if line.nil? || line.strip.empty?
 
           lines << line.rstrip
@@ -59,7 +59,7 @@ module PlanDriven
 
       def secret(prompt)
         output.print "#{prompt} "
-        value = input.respond_to?(:noecho) && input.tty? ? input.noecho(&:gets) : input.gets
+        value = input.respond_to?(:noecho) && input.tty? ? PlanDriven.utf8(input.noecho(&:gets)) : read_line
         output.puts
         value.to_s.strip
       end
@@ -88,6 +88,13 @@ module PlanDriven
         line = ->(cells) { cells.each_with_index.map { |cell, i| cell.to_s.ljust(widths[i]) }.join("  ") }
         say paint(line.call(headers), :bold)
         rows.each { |row| say line.call(row) }
+      end
+
+      private
+
+      def read_line(at_end = "")
+        line = input.gets
+        line.nil? ? at_end : PlanDriven.utf8(line)
       end
     end
   end
