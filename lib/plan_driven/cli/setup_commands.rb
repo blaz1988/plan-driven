@@ -58,6 +58,17 @@ module PlanDriven
         ui.error e.message
       end
 
+      def check_agent_model(agents)
+        model = PlanDriven.configuration.agent_model
+        return ui.warn("Agent model: Cursor's default. Set config.agent_model if agents fail to start.") unless model
+
+        if agents.model_ids.include?(model)
+          ui.success "Agent model: #{model}"
+        else
+          ui.error "Agent model: #{model} isn't available to this key; `GET /v1/models` lists the ones that are"
+        end
+      end
+
       def unused_llm_key
         PlanDriven.configuration.llm_provider.to_sym == :anthropic ? "openai_api_key" : "anthropic_api_key"
       end
@@ -65,8 +76,10 @@ module PlanDriven
       def check_cursor
         return unless Credentials.fetch(:cursor_api_key)
 
-        info = CursorAgents.new.me
+        agents = CursorAgents.new
+        info = agents.me
         ui.success "Cursor API: #{info["userEmail"] || info["apiKeyName"] || "connected"}"
+        check_agent_model(agents)
       rescue Error => e
         ui.error "Cursor API: #{e.message}"
       end

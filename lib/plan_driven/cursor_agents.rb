@@ -52,6 +52,11 @@ module PlanDriven
       request(:get, "/me")
     end
 
+    # IDs and aliases of the models this key can start agents with.
+    def model_ids
+      Array(request(:get, "/models")["items"]).flat_map { |item| [item["id"], *Array(item["aliases"])] }.compact.uniq
+    end
+
     private
 
     def to_run(data)

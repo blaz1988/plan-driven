@@ -53,6 +53,11 @@ RSpec.describe "API clients" do
       end.to raise_error(PlanDriven::ProviderError, "Cursor API returned 409: Agent is running")
     end
 
+    it "lists the model IDs and aliases agents can use" do
+      transport.on(:get, %r{/v1/models\z}, body: { items: [{ id: "composer-2.5", aliases: ["composer"] }, { id: "default" }] })
+      expect(agents.model_ids).to eq(%w[composer-2.5 composer default])
+    end
+
     it "needs a key" do
       expect { described_class.new(api_key: nil).me }.to raise_error(PlanDriven::ConfigurationError, /CURSOR_API_KEY/)
     end
