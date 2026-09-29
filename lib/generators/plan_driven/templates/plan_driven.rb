@@ -4,8 +4,8 @@
 # written by `bundle exec plan-driven configure`.
 PlanDriven.configure do |config|
   # The model that drafts plans and tickets. A stronger model is worth it here.
-  # config.llm_provider = :openai          # or :anthropic
-  # config.llm_model = "gpt-4.1"
+  # config.llm_provider = :openai          # or :anthropic, or :cursor (any model on your Cursor
+  # config.llm_model = "gpt-4.1"           # account, e.g. "claude-opus-5-5"; reads your code)
 
   # Who must approve before the next phase starts.
   # config.plan_approvals = %w[review qa devops director]
