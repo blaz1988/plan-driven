@@ -87,6 +87,7 @@ module PlanDriven
     class Job
       # About as many characters as fit on a line of the terminal panel, for tables.
       PANEL_COLUMNS = 76
+      SERVER_ENV = %w[RAILS_ENV RACK_ENV PORT PIDFILE].freeze
 
       attr_reader :id
 
@@ -143,6 +144,8 @@ module PlanDriven
 
       def execute(command, stdin, actor)
         env = { "LANG" => "en_US.UTF-8", "LC_ALL" => "en_US.UTF-8", "NO_COLOR" => "1", "COLUMNS" => PANEL_COLUMNS.to_s }
+        # The server's own environment stays with the server: a command runs as it would when typed.
+        SERVER_ENV.each { |name| env[name] = nil }
         env["PLAN_DRIVEN_ACTOR"] = actor if actor.present?
         status = Open3.popen2e(env, *command, chdir: @root.to_s) do |input, output, thread|
           input.write(stdin.to_s)

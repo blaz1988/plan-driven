@@ -35,6 +35,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- `evidence` always runs Cucumber with `RAILS_ENV=test`. Started from a development server,
+  as the wizard does, it inherited `RAILS_ENV=development` and ran the scenarios against the
+  development database. The wizard also no longer passes the server's `RAILS_ENV` to commands.
 - `remove_check_constraint` and other `remove_*` methods that drop no data are no longer
   destructive changes; `remove_column(s)`, `remove_reference`, `remove_timestamps`,
   `drop_table`, `rename_*` and `change_column` still are.

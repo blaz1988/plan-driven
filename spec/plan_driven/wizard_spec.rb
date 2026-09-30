@@ -48,6 +48,7 @@ RSpec.describe PlanDriven::Wizard do
       FileUtils.mkdir_p(@root.join("bin"))
       File.write(@root.join("bin/plan-driven"), <<~SH)
         #!/bin/sh
+        [ "$1" = "env" ] && echo "rails_env=[$RAILS_ENV] columns=$COLUMNS" && exit 0
         echo "args: $*"
         echo "actor: $PLAN_DRIVEN_ACTOR"
         cat
@@ -69,6 +70,15 @@ RSpec.describe PlanDriven::Wizard do
       expect(result["status"]).to eq("succeeded")
       expect(result["command"]).to eq("PLAN_DRIVEN_ACTOR=Ana\\ \\<ana@example.com\\> bin/plan-driven submit PD-1 --yes")
       expect(result["output"]).to eq("args: submit PD-1 --yes\nactor: Ana <ana@example.com>\nanswer\n\n✓ done\n")
+    end
+
+    it "runs the command without the server's RAILS_ENV, as if it were typed" do
+      original = ENV.fetch("RAILS_ENV", nil)
+      ENV["RAILS_ENV"] = "development"
+      result = finished(described_class.start(%w[env]))
+      expect(result["output"]).to eq("rails_env=[] columns=76\n")
+    ensure
+      ENV["RAILS_ENV"] = original
     end
 
     it "records a failure" do

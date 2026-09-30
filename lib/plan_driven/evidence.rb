@@ -17,6 +17,10 @@ module PlanDriven
       end
     end
 
+    # Scenarios commit and wipe data, so they never run against the development database, even
+    # when plan-driven itself was started from a development server (the wizard).
+    CUCUMBER_ENV = { "RAILS_ENV" => "test", "RACK_ENV" => "test" }.freeze
+
     module_function
 
     def tag_expression(plan)
@@ -29,7 +33,7 @@ module PlanDriven
         shown = command&.join(" ") || %(bundle exec cucumber --tags "#{tag_expression(plan)}")
         command ||= ["bundle", "exec", "cucumber", "--tags", tag_expression(plan), "--format", "json", "--out", out,
                      "--format", "progress"]
-        output, status = Open3.capture2e(*command, chdir: root.to_s)
+        output, status = Open3.capture2e(CUCUMBER_ENV, *command, chdir: root.to_s)
         json = File.exist?(out) ? File.read(out) : "[]"
         record(plan, json, command: shown, actor: actor, exit_ok: status.success?, output: output)
       end

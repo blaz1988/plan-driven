@@ -62,11 +62,12 @@ RSpec.describe PlanDriven::Evidence do
 
   it "runs the plan's scenarios through the given command" do
     script = root.join("fake_cucumber")
-    File.write(script, "#!/bin/sh\necho '#{cucumber_json([{ feature_tag: t1.feature_tag, tags: ["@ac-1"] }])}'\n")
+    File.write(script, "#!/bin/sh\necho \"env=$RAILS_ENV\"\n" \
+                       "echo '#{cucumber_json([{ feature_tag: t1.feature_tag, tags: ["@ac-1"] }])}'\n")
     File.chmod(0o755, script)
     run = described_class.run_cucumber(plan, actor: "ci", command: [script.to_s], root: root)
     expect(run.command).to eq(script.to_s)
-    expect(run.results["output"]).to include("@ac-1")
+    expect(run.results["output"]).to include("@ac-1", "env=test")
   end
 
   it "says when no evidence exists yet" do
