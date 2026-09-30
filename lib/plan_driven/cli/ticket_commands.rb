@@ -167,7 +167,7 @@ module PlanDriven
       def show_tickets(tickets)
         ui.table(%w[# Title Kind Pts Status PR], tickets.map do |ticket|
           [ticket.key, ticket.title.truncate(48), ticket.kind, ticket.estimate, ticket.status.tr("_", " "),
-           ticket.pr_url.to_s]
+           ticket.pr_number ? "##{ticket.pr_number}" : ""]
         end)
       end
     end

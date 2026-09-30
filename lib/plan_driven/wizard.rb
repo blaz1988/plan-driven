@@ -85,6 +85,9 @@ module PlanDriven
     # One command run: its output in a log file, its state in a JSON file next to it, so any
     # request (and any Puma thread) can read how it's going.
     class Job
+      # About as many characters as fit on a line of the terminal panel, for tables.
+      PANEL_COLUMNS = 76
+
       attr_reader :id
 
       def self.dir(root = PlanDriven.configuration.root_path)
@@ -139,7 +142,7 @@ module PlanDriven
       private
 
       def execute(command, stdin, actor)
-        env = { "LANG" => "en_US.UTF-8", "LC_ALL" => "en_US.UTF-8", "NO_COLOR" => "1" }
+        env = { "LANG" => "en_US.UTF-8", "LC_ALL" => "en_US.UTF-8", "NO_COLOR" => "1", "COLUMNS" => PANEL_COLUMNS.to_s }
         env["PLAN_DRIVEN_ACTOR"] = actor if actor.present?
         status = Open3.popen2e(env, *command, chdir: @root.to_s) do |input, output, thread|
           input.write(stdin.to_s)

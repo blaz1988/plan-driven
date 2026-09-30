@@ -85,10 +85,12 @@ module PlanDriven
         success ok_message if report.errors.empty? && report.warnings.empty?
       end
 
-      # On a terminal, the last column is cut to fit its width, so rows don't wrap.
+      MIN_COLUMN = 16
+
+      # The widest columns are cut to fit the terminal's width, so rows don't wrap.
       def table(headers, rows)
-        rows = fit_last_column(headers, rows)
-        widths = headers.each_index.map { |i| ([headers[i]] + rows.map { |row| row[i] }).map { |v| v.to_s.length }.max }
+        rows = fit_columns(headers, rows)
+        widths = column_widths(headers, rows)
         line = ->(cells) { cells.each_with_index.map { |cell, i| cell.to_s.ljust(widths[i]) }.join("  ") }
         say paint(line.call(headers), :bold)
         rows.each { |row| say line.call(row) }
@@ -96,23 +98,31 @@ module PlanDriven
 
       private
 
-      def fit_last_column(headers, rows)
-        columns = terminal_width or return rows
-        widths = headers[0..-2].each_index.map do |i|
-          ([headers[i]] + rows.map do |row|
-            row[i]
-          end).map { |v| v.to_s.length }.max
-        end
-        room = columns - widths.sum - (2 * widths.size) - 1
-        return rows if room < 20
-
-        rows.map { |row| row[0..-2] + [row.last.to_s.truncate(room)] }
+      def column_widths(headers, rows)
+        headers.each_index.map { |i| ([headers[i]] + rows.map { |row| row[i] }).map { |v| v.to_s.length }.max }
       end
 
-      def terminal_width
-        return unless output.respond_to?(:tty?) && output.tty? && output.respond_to?(:winsize)
+      # Cuts the widest columns short, never below MIN_COLUMN, until the table fits the terminal.
+      def fit_columns(headers, rows)
+        columns = terminal_width or return rows
+        widths = column_widths(headers, rows)
+        room = columns - (2 * (widths.size - 1)) - 1
+        while widths.sum > room
+          widest = widths.each_index.max_by { |i| widths[i] }
+          cut = [widths[widest] - (widths.sum - room), MIN_COLUMN, headers[widest].length].max
+          break if cut >= widths[widest]
 
-        output.winsize[1].then { |columns| columns.positive? ? columns : nil }
+          widths[widest] = cut
+        end
+        rows.map { |row| row.each_with_index.map { |cell, i| cell.is_a?(String) ? cell.truncate(widths[i]) : cell } }
+      end
+
+      # The terminal's width, or COLUMNS when the output isn't a terminal (the wizard sets it).
+      def terminal_width
+        if output.respond_to?(:tty?) && output.tty? && output.respond_to?(:winsize)
+          output.winsize[1].then { |columns| return columns if columns.positive? }
+        end
+        ENV["COLUMNS"].to_i.then { |columns| columns.positive? ? columns : nil }
       rescue StandardError
         nil
       end

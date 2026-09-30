@@ -44,6 +44,22 @@ RSpec.describe PlanDriven::CLI do
     expect(lines.map(&:length).max).to be < 40
   end
 
+  it "cuts the widest columns to COLUMNS when the output isn't a terminal" do
+    terminal = StringIO.new
+    ui = PlanDriven::CLI::UI.new(output: terminal)
+    rows = [["T1", "Show comments on the event page, oldest first", "code", 3, "#29"]]
+    original = ENV.fetch("COLUMNS", nil)
+    ENV["COLUMNS"] = "50"
+    ui.table(%w[# Title Kind Pts PR], rows)
+
+    lines = terminal.string.gsub(/\e\[[\d;]*m/, "").lines.map(&:chomp)
+    expect(lines.last).to start_with("T1  Show comments on the event...  code")
+    expect(lines.last).to end_with("#29")
+    expect(lines.map(&:rstrip).map(&:length).max).to be < 50
+  ensure
+    ENV["COLUMNS"] = original
+  end
+
   it "rejects unknown commands" do
     expect(run("deploy")).to eq([1, "✗ Unknown command `deploy`. `plan-driven help` lists them.\n"])
   end
