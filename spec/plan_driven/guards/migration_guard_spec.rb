@@ -13,7 +13,9 @@ RSpec.describe PlanDriven::Guards::MigrationGuard do
     "remove_column :forms, :business_process_id",
     "rename_table :fields, :form_fields",
     "change_column :fields, :value_type, :integer",
-    "Delete the obsolete fields column required."
+    "Delete the obsolete fields column required.",
+    "remove_reference :forms, :business_process",
+    "Removal of the value_type column from fields."
   ].freeze
 
   DESTRUCTIVE.each do |text|
@@ -67,6 +69,12 @@ RSpec.describe PlanDriven::Guards::MigrationGuard do
 
   it "still rejects a removal followed by an unrelated negation" do
     expect(check("Drop the legacy_name column; no code reads it.").errors.first).to match(/in one step/)
+  end
+
+  it "doesn't count removing a constraint, an index or a foreign key as removing data" do
+    text = "Raising the limit means a migration with `remove_check_constraint` and `add_check_constraint` " \
+           "on the `forms` table.\n```ruby\nremove_index :forms, :name\nremove_foreign_key :forms, :projects\n```"
+    expect(check(text).errors).to be_empty
   end
 
   it "passes additive changes" do

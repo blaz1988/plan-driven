@@ -4,8 +4,14 @@ module PlanDriven
   module Guards
     # Zero-downtime rules for the Database changes section: expand first, contract last.
     class MigrationGuard
-      DESTRUCTIVE = /\b(remove|drop|delete|rename)\w*\b[^.\n]{0,80}\b(column|table|field)s?\b|
-                     \b(remove_column|drop_table|rename_column|rename_table|change_column)\b/ix
+      # Removing a constraint, an index or a foreign key loses no data, so `remove_check_constraint`
+      # is not a removal; the migration methods that drop columns are listed by name.
+      DESTRUCTIVE = /
+        \b(remov(e|es|ed|ing|al)|drop(s|ped|ping)?|delet(e|es|ed|ing|ion)|renam(e|es|ed|ing))\b
+          [^.\n]{0,80}\b(column|table|field)s?\b
+        | \b(remove_columns?|remove_reference|remove_belongs_to|remove_timestamps|drop_table|
+             rename_column|rename_table|change_column)\b
+      /ix
       # A removal is staged when its own sentence says so, or when it sits under a contract step.
       SAFE_REMOVAL = Regexp.union(/ignored_columns|\bcontract\b/i, /in a later (step|phase|release|migration|deploy)/i,
                                   /after (the )?(backfill|deploy)|once (reads|the code|no code)/i)
