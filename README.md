@@ -990,21 +990,87 @@ a small, conventional one is cheaper to work on.
 
 ## Statistics
 
-`plan-driven stats PD-1`, the Statistics page in the wizard and the delivery report show where
-a plan's time went:
+Where did the time go? Was it the agents writing code, or the pull requests waiting for a
+person? The same numbers are in three places:
 
-- the phases: planning, tickets, development and proof;
-- each ticket's time, split into queued, agent coding, waiting for review, agent fixing
-  feedback, and approved but not merged;
-- the agents' share of the time tickets were worked on, and how many pull requests were
-  approved the first time;
-- acceptance criteria merged and proven by a passing test over time, against the plan's scope.
+- **In the wizard:** every plan has a Statistics page, linked under its title and from the
+  Proof & report step. In development that's `http://localhost:3000/plan_driven/plans/PD-1/statistics`.
+- **In the terminal:** `bin/plan-driven stats PD-1`.
+- **In the delivery report:** a Statistics section with the same charts, in the Markdown, the
+  HTML and the PDF.
 
-Nothing is estimated: every number is the time between two events in the audit trail. The
-charts are SVG drawn in Ruby. The delivery report writes them next to `delivery-report.md`, so
-GitHub shows them, and carries them inline in the HTML and the PDF.
+![The Statistics page in the wizard, for a delivered plan](docs/images/statistics.png)
 
-![The Statistics page in the wizard](docs/images/statistics.png)
+This is PD-3 from the demo: six tickets delivered in 1 h 20 min, 42 of 42 criteria proven.
+
+- **Cards:** idea to delivery, development time, criteria proven, pull requests approved the
+  first time, the agents' share of the work, and tokens.
+- **Acceptance criteria, merged and proven:** a burn-up against the plan's scope. The blue
+  line rises as each ticket merges with its criteria, and the green line rises when an
+  evidence run proves them. Every run is a dot, red when it failed. Here, two runs failed
+  around 14:50 and the third proved all 42.
+- **Where the time went, ticket by ticket:** one row per ticket on a shared clock. Grey is
+  queued, waiting for the tickets it depends on. Blue is an agent coding, amber is the pull
+  request waiting for review, purple is an agent fixing feedback, and green is approved but
+  not merged. T3 has one round of feedback, and each ticket waited for the one before it.
+- **Agents and people:** how the time tickets were worked on splits. Here agents took 91% of
+  it and reviews took 7%. On a plan where the donut is mostly amber, the bottleneck is review,
+  not code.
+- **Ticket by ticket, and the phases:** the same times as a table, with the estimate and the
+  review rounds, and how long planning, tickets, development and proof took.
+
+```
+$ bin/plan-driven stats PD-3
+PD-3 Comments on events: statistics
+  Planning              2 min
+  Tickets               2 min
+  Development           1 h 20 min
+  Proof                 10 min
+  Idea to delivery      1 h 25 min
+  Tickets merged        6 of 6, 5 approved the first time
+✓ 42 of 42 acceptance criteria proven
+
+Where the time went while tickets were worked on (agents 91%):
+  Agent coding           1 h 2 min  ████████████████████ 79%
+  Waiting for review         5 min  ██ 7%
+  Agent fixing feedback      9 min  ███ 12%
+  Approved, not merged       1 min  █ 2%
+
+#   Est  Queued      Agent   Review  Fixes  Merge  Rounds  Total
+T1  2    53s         10 min  4 min   -      23s    0       16 min
+T2  2    17 min      10 min  8s      -      12s    0       10 min
+T3  3    28 min      11 min  28s     9 min  10s    1       21 min
+...
+```
+
+### How it's worked out
+
+Nothing is estimated, and no model is asked. Every number is the time between two events that
+plan-driven already records in the audit trail:
+
+| From | To | Counts as |
+| --- | --- | --- |
+| `tickets.approved` | `ticket.agent_started` | Queued |
+| `ticket.agent_started` | `ticket.pr_opened` | Agent coding |
+| `ticket.pr_opened` | `ticket.pr_approved` or `ticket.changes_requested` | Waiting for review |
+| `ticket.changes_requested` | the next `ticket.pr_opened` | Agent fixing feedback |
+| `ticket.pr_approved` | `ticket.merged` | Approved, not merged |
+
+The phases run from `plan.drafted` to the last `plan.approved` (planning), then to
+`tickets.approved` (tickets), then to `plan.delivered` (development), then to the first
+passing evidence run (proof). A plan still in development is counted up to now. A plan whose
+tickets aren't approved yet shows only its planning time.
+
+The charts are SVG drawn in Ruby, with no JavaScript and nothing to install. `report` writes
+them next to `delivery-report.md` (`statistics-burnup.svg`, `statistics-timeline.svg`,
+`statistics-time.svg`, `statistics-proof.svg`), so GitHub shows them in the Markdown, and it
+inlines them in the HTML and the PDF so both stand alone.
+
+The report also marks every acceptance criterion's result in colour: a green, red, amber or
+grey pill with a matching edge on its row, and failed rows tinted red. On GitHub, the Markdown
+shows ✅, ❌, ⏸️ or ⚠️ instead.
+
+![Acceptance criteria and proof in the delivery report](docs/images/statistics-report.png)
 
 ## How it compares
 
