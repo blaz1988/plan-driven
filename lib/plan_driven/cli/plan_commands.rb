@@ -128,7 +128,7 @@ module PlanDriven
         PlanDriven.configuration.template.asked.to_h do |section|
           answer = ""
           loop do
-            answer = ui.ask_multiline("#{section.title}: #{section.question}")
+            answer = ui.ask_multiline("#{section.title}: #{section.prompt}")
             break unless section.required && answer.strip.empty?
 
             ui.warn "#{section.title} is required."

@@ -57,8 +57,22 @@ module PlanDriven
     # The plan's sections. Template.default mirrors the usual Confluence implementation plan.
     attr_writer :template
 
+    # The template with the team's interview changes (config/plan_driven/interview.yml) applied.
     def template
-      @template ||= Template.default
+      file = Interview.path(root_path)
+      stamp = [base_template.object_id, file.to_s, file.exist? && file.mtime]
+      unless @interview_stamp == stamp
+        @interview_template = Interview.apply(base_template, root_path)
+        @interview_stamp = stamp
+      end
+      @interview_template
+    end
+
+    # The template as the initializer set it, before the interview changes.
+    def base_template
+      return @template if @template
+
+      @template = Template.default
     end
 
     def initialize

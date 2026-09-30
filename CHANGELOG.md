@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-30
+
 ### Added
 
 - The browser wizard: a Rails engine the install generator mounts at `/plan_driven`, in
@@ -13,6 +15,16 @@ All notable changes to this project are documented here. The format follows
   and evidence with Back and Next, and every button runs the matching `plan-driven` command in
   the background, with the command and its live output shown beside the form. Only a fixed
   list of commands can run, for local requests only (`config.wizard_enabled`).
+- The wizard's Configuration page: Connections shows which services the app uses and whether
+  each has a key, and connects one from a pasted key; Interview questions changes, adds and
+  removes the questions `new` asks.
+- `plan-driven connect SERVICE` (`cursor`, `openai`, `anthropic`, `github`) checks a key with
+  the service before storing it, and stores nothing when the service refuses it. The key is
+  read from stdin, never from the command line.
+- `plan-driven questions` and `plan-driven question KEY` (`--title`, `--ask`, `--group`,
+  `--required`, `--optional`, `--remove`). The changes live in the app, in
+  `config/plan_driven/interview.yml`, so the team shares one interview; an added question is
+  a section of the plan like the others.
 - `plan-driven edit PLAN SECTION --from FILE` replaces a section with a file's contents.
 - Tokens and cost. Every model call (drafting, redrafts, tickets) and every agent run is
   recorded with its tokens and duration. `plan-driven usage PLAN` prints them, and the delivery
@@ -35,6 +47,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Optional questions no longer read "(optional) (optional)" in the New plan form: the
+  interview adds "(optional)" itself, in the terminal and in the wizard alike.
+- `plan-driven version` exits with status 0 instead of a TypeError after printing the version.
 - `evidence` always runs Cucumber with `RAILS_ENV=test`. Started from a development server,
   as the wizard does, it inherited `RAILS_ENV=development` and ran the scenarios against the
   development database. The wizard also no longer passes the server's `RAILS_ENV` to commands.
@@ -110,5 +125,6 @@ First public release.
 - `plan-driven doctor` checks keys, the repository, the PDF browser, the Cursor API, the agent
   model, and Node and the SDK for `:cursor`.
 
-[Unreleased]: https://github.com/blaz1988/plan-driven/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/blaz1988/plan-driven/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/blaz1988/plan-driven/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/blaz1988/plan-driven/releases/tag/v0.1.0

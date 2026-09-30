@@ -24,6 +24,10 @@ RSpec.describe PlanDriven::CLI do
     expect(text).to include("approve-tickets PLAN", "Phases: plan draft")
   end
 
+  it "prints the version and exits cleanly" do
+    expect(run("version")).to eq([0, "#{PlanDriven::VERSION}\n"])
+  end
+
   it "shows the tokens each step spent, and the cost when priced" do
     PlanDriven.configuration.token_prices = { "model" => { input: 3, output: 15 } }
     run("new", "Polymorphic", "form", "ownership", input: interview_input)
@@ -182,6 +186,51 @@ RSpec.describe PlanDriven::CLI do
     plan = PlanDriven::Plan.last
     expect([plan.created_by, plan.section("who")]).to eq(["Ivan Blažević", "Tim Čačić"])
     expect(root.join("docs/plans/#{plan.slug}/plan.md").read(encoding: "UTF-8")).to include("Created by Ivan Blažević")
+  end
+
+  it "changes, adds and removes interview questions" do
+    status, text = run("question", "who", "--ask", "Who owns it, and who reviews?", "--yes")
+    expect(status).to eq(0)
+    expect(text).to include("Question who changed", "Who owns it, and who", "changed")
+
+    status, text = run("question", "metric", "--title", "Metric", "--ask", "Which number moves?", "--required")
+    expect(status).to eq(0)
+    expect(text).to include("Question metric added", "metric", "added")
+    expect(PlanDriven.configuration.template["metric"].required).to be(true)
+
+    expect(run("question", "metric", "--remove").last).to include("Question metric removed")
+    expect(run("question", "who", "--remove").last).to include("Question who is back to the default")
+    expect(run("question", "security", "--ask", "?")).to eq([1, "✗ security is drafted by the model, not asked; " \
+                                                                "only asked questions can be changed\n"])
+  end
+
+  describe "connect" do
+    let(:transport) { FakeTransport.new }
+
+    before { PlanDriven::HTTP.transport = transport }
+
+    it "checks a key with the service, then stores it without printing it" do
+      transport.on(:get, %r{api.cursor.com/v1/me\z}, body: { userEmail: "ana@example.com" })
+      status, text = run("connect", "cursor", input: "key_secret\n")
+
+      expect(status).to eq(0)
+      expect(text).to include("Cursor: connected as ana@example.com", "stored in", "never in the app")
+      expect(text).not_to include("key_secret")
+      expect(PlanDriven::Credentials.read["cursor_api_key"]).to eq("key_secret")
+    end
+
+    it "stores nothing when the service refuses the key" do
+      transport.on(:get, %r{api.github.com/user\z}, status: 401, body: { message: "Bad credentials" })
+      status, text = run("connect", "github", input: "ghp_wrong\n")
+
+      expect(status).to eq(1)
+      expect(text).to include("GitHub refused the key (HTTP 401); nothing was stored.")
+      expect(PlanDriven::Credentials.read).not_to have_key("github_token")
+    end
+
+    it "needs a key" do
+      expect(run("connect", "openai", input: "\n")).to include(a_string_including("No key given; nothing was stored."))
+    end
   end
 
   it "writes the audit log" do

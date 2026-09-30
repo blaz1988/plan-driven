@@ -57,12 +57,20 @@
     details.section > summary { padding:10px 14px; cursor:pointer; font-weight:600; }
     details.section > div { padding:0 16px 14px; }
     .doc table { font-size:13px; } .doc pre { background:#f3f4f6; padding:10px; border-radius:6px; overflow:auto; font-size:12px; }
+    header.top nav { display:flex; gap:14px; margin-left:12px; font-size:14px; }
+    header.top nav a { color:var(--muted); text-decoration:none; } header.top nav a:hover { color:var(--ink); }
+    input[type=password], select { font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; }
+    .row input[type=password] { flex:1; min-width:180px; }
+    .grid2 { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 2fr); gap:12px; }
+    label.check { display:inline-flex; gap:6px; align-items:center; font-weight:400; margin:0; }
+    .card.unused { opacity:.75; }
     .flash { padding:10px 14px; border-radius:8px; margin-bottom:12px; background:#fee2e2; color:var(--bad); }
   </style>
 </head>
 <body>
   <header class="top">
     <a class="brand" href="<%= root_path %>">plan<span>_</span>driven <span class="muted" style="font-weight:400">wizard</span></a>
+    <nav><%= link_to "Plans", root_path %> <%= link_to "Configuration", configuration_path %></nav>
     <%= form_with url: actor_path, method: :post do |f| %>
       acting as <%= f.text_field :actor, value: acting_as %> <button type="submit">Set</button>
     <% end %>

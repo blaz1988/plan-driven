@@ -36,7 +36,7 @@ the plan drafted and one section redrafted, six tickets as issues
 [#45](https://github.com/blaz1988/gather/pull/45)), one round of feedback, and 42 of 42
 acceptance criteria proven by a passing scenario. After every click the video zooms into the
 wizard's terminal panel, which shows the `plan-driven` command that ran and its output. The
-wizard is on main and comes to RubyGems in 0.2.0.
+wizard ships with 0.2.0.
 
 <details>
 <summary>Chapters</summary>
@@ -253,7 +253,7 @@ into your application. See [Keys](#keys).
 ```
 $ bin/plan-driven doctor
 
-plan-driven 0.1.0
+plan-driven 0.2.0
 ✓ Rails application: plan_driven tables present
 LLM: cursor/claude-opus-5-5
 ✓ Cursor SDK: Node v24.21.0, @cursor/sdk found
@@ -343,13 +343,49 @@ So anything done in the browser can be repeated, scripted or reviewed from the t
 the audit trail is the same either way. A few things to know:
 
 - Only a fixed list of commands can run, built from the form fields as an argument list, never
-  through a shell. `configure` isn't on it: keys are still set in the terminal, and the wizard
-  never shows them.
+  through a shell. A key pasted on the Configuration page goes to `plan-driven connect` on
+  stdin, so it's never in the command line, the panel or the logs.
 - It answers local requests only, and only in development. `config.wizard_enabled = true`
   turns it on in another environment, still for local requests only.
 - "Acting as" at the top sets `PLAN_DRIVEN_ACTOR` for the commands it runs, so approvals are
   recorded under the name you give; it defaults to your git identity.
 - Each run is kept in `tmp/plan_driven/wizard/`: the command, its output and its exit status.
+
+### Configuration: connections and the interview
+
+**Configuration**, at the top of every page, has two parts.
+
+**Connections** shows which services this app's configuration uses (Cursor for cloud agents
+or drafting, OpenAI or Anthropic for drafting, GitHub for issues and pull requests), whether
+each one has a key, and where the key comes from. Paste a key and click Connect:
+`plan-driven connect cursor` checks it with the service first (for Cursor, the account it
+belongs to) and only then stores it in `~/.plan_driven/config`. A refused key is never stored.
+**Check every connection** runs `doctor`. The same works in the terminal:
+
+```
+$ bin/plan-driven connect cursor
+Cursor key:
+Checking the key with Cursor...
+✓ Cursor: connected as ana@example.com
+  stored in ~/.plan_driven/config (0600), never in the app
+```
+
+Which model drafts and which agents write the code are still set in the initializer (see
+[Choosing the coding agents](#choosing-the-coding-agents)); the page shows the current choice.
+
+**Interview questions** lists what `plan-driven new` and the New plan form ask. Change a
+question's title or wording, make it required or optional, add your own questions, or put one
+back to the default. Each Save runs `plan-driven question`:
+
+```
+$ bin/plan-driven question success_metric --title "Success metric" --ask "How will we know it worked?" --optional
+✓ Question success_metric added
+```
+
+The changes are written to `config/plan_driven/interview.yml` in your app. Commit it, and the
+whole team gets the same interview, in the wizard and in the terminal. An added question goes
+to the model with the other answers, and it's a section of the plan under the group you pick.
+Drafted sections (Database changes, Risks...) belong to the model and can't be changed here.
 
 ## Walkthrough: one feature from idea to merged
 
@@ -804,14 +840,17 @@ key such as `PD-1`, and `PLAN/TICKET` is a ticket such as `PD-1/T3`.
 | `report PLAN` | Write the delivery report |
 | `log PLAN` | The audit trail |
 | `usage PLAN` | Tokens, time and cost per step and per agent run |
+| `questions` | The interview's questions, and which ones the team changed or added |
+| `question KEY [--title T] [--ask Q] [--group G] [--required \| --optional] [--remove]` | Change or add an interview question, or put it back |
 | `configure` | Store keys in `~/.plan_driven/config` |
+| `connect SERVICE` | Check a key with `cursor`, `openai`, `anthropic` or `github`, then store it |
 | `doctor` | Check keys, repository, PDF browser, and the Cursor connection or local agent command |
 
 Section keys for `show --section`, `edit` and `redraft`: `what`, `why`, `where`, `who`,
 `when`, `background`, `existing_data_structure`, `architecture`, `database_changes`,
 `application_changes`, `infrastructure_changes`, `out_of_scope`, `risks`, `performance`,
-`security`, `monitoring`, `outstanding_questions` and `testing`. `edit PLAN` without a section
-lists them.
+`security`, `monitoring`, `outstanding_questions` and `testing`, plus any question the team
+added. `edit PLAN` without a section lists them.
 
 `--yes` skips confirmations, for scripts. `merge` still needs the ticket key typed unless
 `--yes` is given.

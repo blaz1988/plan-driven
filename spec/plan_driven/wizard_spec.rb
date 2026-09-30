@@ -23,6 +23,29 @@ RSpec.describe PlanDriven::Wizard do
       expect(argv("doctor")).to eq(%w[doctor --yes])
     end
 
+    it "builds the Configuration page's commands, with the key kept out of the command line" do
+      expect(argv("questions")).to eq(%w[questions --yes])
+      expect(argv("question", key: "who", question: " Who reviews? ", required: "1"))
+        .to eq(["question", "who", "--ask", "Who reviews?", "--required", "--yes"])
+      expect(argv("question", key: "metric", title: "Metric", question: "Which number?", group: "Risks", required: "0"))
+        .to eq(["question", "metric", "--title", "Metric", "--ask", "Which number?", "--group", "Risks", "--optional",
+                "--yes"])
+      expect(argv("question", key: "metric", remove: "1")).to eq(%w[question metric --remove --yes])
+      expect(argv("connect", service: "Cursor", api_key: "key_secret")).to eq(%w[connect cursor --yes])
+      expect { argv("question", key: "who --remove") }.to raise_error(ArgumentError, "not a question key")
+      expect { argv("connect", service: "slack") }.to raise_error(ArgumentError, /Connect what/)
+    end
+
+    it "asks the questions the team added, in the form and in the terminal alike" do
+      PlanDriven::Interview.change("metric", { "title" => "Metric", "question" => "Which number moves?" },
+                                   template: PlanDriven.configuration.base_template)
+      answers = { "what" => "Comments", "why" => "Chat", "where" => "Event page", "who" => "Gather", "metric" => "Posts" }
+      input = described_class.interview_input(PlanDriven.configuration.template, answers)
+
+      cli = PlanDriven::CLI.new(input: StringIO.new(input), output: StringIO.new, boot: false)
+      expect(cli.send(:interview)).to include("who" => "Gather", "metric" => "Posts", "background" => "")
+    end
+
     it "turns the interview form into the answers `new` reads, one per question" do
       answers = { "what" => "Comments\r\n\r\non events", "why" => "Lost in chat", "where" => "Event page",
                   "who" => "Team Gather", "when" => "", "out_of_scope" => "Replies" }

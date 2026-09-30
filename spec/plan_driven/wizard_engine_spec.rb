@@ -11,6 +11,7 @@ RSpec.describe "The wizard engine in a Rails app" do
     expect(output.lines.map(&:chomp).grep(/\A\d{3} /)).to eq([
                                                                "200 /plan_driven true",
                                                                "200 /plan_driven/plans/new true",
+                                                               "200 /plan_driven/configuration true",
                                                                "200 /plan_driven/plans/PD-1 true",
                                                                "200 /plan_driven/plans/PD-1/approve true",
                                                                "200 /plan_driven/plans/PD-1/tickets true",

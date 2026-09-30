@@ -7,6 +7,7 @@ require_relative "cli/ui"
 require_relative "cli/plan_commands"
 require_relative "cli/ticket_commands"
 require_relative "cli/setup_commands"
+require_relative "cli/config_commands"
 
 module PlanDriven
   # bundle exec plan-driven <command> [arguments]
@@ -14,6 +15,7 @@ module PlanDriven
     include PlanCommands
     include TicketCommands
     include SetupCommands
+    include ConfigCommands
 
     COMMANDS = {
       "new" => ["TITLE", "Interview in the terminal, then draft the plan from your answers and the schema"],
@@ -39,11 +41,14 @@ module PlanDriven
       "report" => ["PLAN", "Write the delivery report"],
       "log" => ["PLAN", "The audit trail"],
       "usage" => ["PLAN", "Tokens and cost per step and per agent run"],
+      "questions" => ["", "The interview's questions, with the team's changes"],
+      "question" => ["KEY", "Change or add a question (--title, --ask, --group, --required, --optional, --remove)"],
       "configure" => ["", "Store API keys in ~/.plan_driven/config"],
+      "connect" => ["SERVICE", "Check a key with cursor, openai, anthropic or github, then store it"],
       "doctor" => ["", "Check keys, repository and connections"]
     }.freeze
 
-    NO_APP = %w[configure doctor help version].freeze
+    NO_APP = %w[configure connect doctor help version].freeze
 
     # Plans are UTF-8 whatever the terminal's locale says, so answers typed with č or ž under
     # LANG=C are read as text, not bytes.
@@ -65,7 +70,7 @@ module PlanDriven
       @ui = UI.new(input: @input, output: @output, assume_yes: options[:yes])
       @options = options
       return help if %w[help -h --help].include?(command)
-      return @ui.say(PlanDriven::VERSION) if %w[version -v --version].include?(command)
+      return @ui.say(PlanDriven::VERSION) || 0 if %w[version -v --version].include?(command)
       raise Error, "Unknown command `#{command}`. `plan-driven help` lists them." unless COMMANDS.key?(command)
 
       boot_application unless NO_APP.include?(command)
@@ -110,8 +115,18 @@ module PlanDriven
         parser.on("--section KEY") { |value| options[:section] = value }
         parser.on("--from FILE") { |value| options[:from] = value }
         parser.on("-y", "--yes") { options[:yes] = true }
+        question_options(parser, options)
       end.parse!(argv)
       options
+    end
+
+    def question_options(parser, options)
+      parser.on("--title TEXT") { |value| options[:title] = value }
+      parser.on("--ask TEXT") { |value| options[:ask] = value }
+      parser.on("--group NAME") { |value| options[:group] = value }
+      parser.on("--required") { options[:required] = true }
+      parser.on("--optional") { options[:required] = false }
+      parser.on("--remove") { options[:remove] = true }
     end
 
     def boot_application

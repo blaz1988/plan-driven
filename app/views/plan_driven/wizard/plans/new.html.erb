@@ -9,7 +9,7 @@
 
   <% @template.asked.each do |section| %>
     <label for="answer_<%= section.key %>"><%= section.title %>
-      <small><%= section.question %><%= " (optional)" unless section.required %></small></label>
+      <small><%= section.prompt %></small></label>
     <%= text_area_tag "answers[#{section.key}]", params.dig(:answers, section.key), id: "answer_#{section.key}",
                       rows: section.required ? 4 : 2 %>
   <% end %>

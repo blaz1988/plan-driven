@@ -29,7 +29,11 @@ module PlanDriven
         "review" => ->(p) { [ticket(p)] },
         "merge" => ->(p) { [ticket(p)] },
         "approve-pr" => ->(p) { [ticket(p), *note(p)] },
-        "feedback" => ->(p) { [ticket(p), required(p, "feedback")] }
+        "feedback" => ->(p) { [ticket(p), required(p, "feedback")] },
+        "questions" => ->(_p) { [] },
+        "question" => ->(p) { [question_key(p), *question_flags(p)] },
+        # The key itself goes on stdin, so it's never in the command line or the panel.
+        "connect" => ->(p) { [Connections.find(required(p, "service")).name] }
       }.merge(PLAN_ONLY.to_h { |name| [name, ->(p) { [plan(p)] }] }).freeze
 
       module_function
@@ -79,6 +83,24 @@ module PlanDriven
 
       def note(params)
         params["note"].to_s.strip.empty? ? [] : ["--note", params["note"].strip]
+      end
+
+      def question_key(params)
+        required(params, "key").tap do |key|
+          raise ArgumentError, "not a question key" unless key.match?(Interview::KEY)
+        end
+      end
+
+      def question_flags(params)
+        return ["--remove"] if params["remove"].to_s == "1"
+
+        flags = []
+        flags += ["--title", params["title"].strip] if params["title"].to_s.strip != ""
+        flags += ["--ask", params["question"].strip] if params["question"].to_s.strip != ""
+        flags += ["--group", params["group"]] if params["group"].to_s != ""
+        flags << "--required" if params["required"].to_s == "1"
+        flags << "--optional" if params["required"].to_s == "0"
+        flags
       end
     end
 

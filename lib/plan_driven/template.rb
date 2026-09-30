@@ -15,6 +15,11 @@ module PlanDriven
       def drafted?
         source == :draft
       end
+
+      # The question as the interview shows it, in the terminal and in the wizard.
+      def prompt
+        required ? question.to_s : "#{question} (optional)"
+      end
     end
 
     GROUPS = ["Overview", "Background", "Architectural changes", "Work overview", "Risks", "Testing"].freeze
@@ -68,7 +73,7 @@ module PlanDriven
       { key: "when", title: "When", group: "Overview", source: :ask, required: false, min_words: 0,
         question: "When is it needed? (date, milestone, or leave empty)", guidance: "Target date or milestone." },
       { key: "background", title: "Background", group: "Background", source: :ask, required: false, min_words: 0,
-        question: "Links, PRDs, existing tickets, earlier decisions (optional)",
+        question: "Links, PRDs, existing tickets, earlier decisions",
         guidance: "Links, product documents, related tickets and earlier decisions." },
       { key: "existing_data_structure", title: "Existing Data Structure", group: "Background", source: :draft,
         required: true, min_words: 30,
@@ -91,7 +96,7 @@ module PlanDriven
         source: :draft, required: true, min_words: 5,
         guidance: "Queues, external services, feature flags and rollout order. Say so when there are none." },
       { key: "out_of_scope", title: "Out of Scope", group: "Work overview", source: :ask, required: false,
-        min_words: 0, question: "What is explicitly out of scope? (optional)",
+        min_words: 0, question: "What is explicitly out of scope?",
         guidance: "What this plan deliberately doesn't do." },
       { key: "risks", title: "Risks", group: "Risks", source: :draft, required: true, min_words: 15,
         guidance: "The main risks as a list, and how each is mitigated." },

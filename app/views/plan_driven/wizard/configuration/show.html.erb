@@ -1,0 +1,104 @@
+<% content_for :title, "Configuration" %>
+<% config = PlanDriven.configuration %>
+<h1>Configuration</h1>
+<p class="muted">Connect the services this app uses, and change the interview. Every button runs one
+  <code>plan-driven</code> command; the panel on the right shows it.</p>
+
+<h2 id="connections">Connections</h2>
+<div class="card">
+  <p style="margin-top:0">
+    Plans and tickets are drafted with <strong><%= config.llm_provider %> · <%= config.llm_model %></strong>.
+    Tickets go to
+    <strong><%= config.agent_provider.to_sym == :local ? "local agents (#{config.agent_command.presence || "no agent_command set"})" : "Cursor cloud agents" %></strong>.
+  </p>
+  <p class="muted" style="margin-bottom:0">To use another model or agent, change it in
+    <code>config/initializers/plan_driven.rb</code>, for example <code>config.llm_provider = :anthropic</code>, or
+    <code>config.agent_provider = :local</code> with <code>config.agent_command = "claude -p"</code>, then restart the server.</p>
+</div>
+
+<% PlanDriven::Connections::SERVICES.sort_by { |s| @needed.include?(s.name) ? 0 : 1 }.each do |service| %>
+  <% source = PlanDriven::Credentials.source(service.key) %>
+  <% used = @needed.include?(service.name) %>
+  <div class="card service <%= "unused" unless used %>" id="service_<%= service.name %>">
+    <div class="row" style="justify-content:space-between">
+      <div>
+        <strong><%= service.title %></strong>
+        <% if source %>
+          <span class="pill good">key set · <%= source.sub(Dir.home, "~") %></span>
+        <% elsif used %>
+          <span class="pill bad">not connected</span>
+        <% else %>
+          <span class="pill">not used by this configuration</span>
+        <% end %>
+        <div class="muted" style="font-size:13px"><%= service.purpose %>.
+          <a href="<%= service.url %>" target="_blank" rel="noopener">Get a key ↗</a></div>
+      </div>
+    </div>
+    <%= form_with url: configuration_connect_path, method: :post, class: "row connect", style: "margin-top:10px" do %>
+      <%= hidden_field_tag :service, service.name %>
+      <%= password_field_tag :api_key, nil, id: "api_key_#{service.name}", autocomplete: "off",
+                             placeholder: "Paste the #{service.title} key", "aria-label": "#{service.title} key" %>
+      <button type="submit" class="<%= "primary" if used && !source %>"><%= source ? "Replace" : "Connect" %></button>
+    <% end %>
+  </div>
+<% end %>
+<p class="muted" style="font-size:13px">A key is checked with the service first, then stored in
+  <code>~/.plan_driven/config</code> (0600), never in the app. It goes to the command on stdin, so it isn't in
+  the panel or the logs. A key in the environment always wins.</p>
+<%= button_to "Check every connection", configuration_check_path(do: "doctor"), form: { style: "display:inline" } %>
+
+<h2 id="questions">Interview questions</h2>
+<p class="muted">What <code>plan-driven new</code> and the New plan form ask. Changes are written to
+  <code><%= PlanDriven::Interview::PATH %></code>; commit it so the whole team gets the same interview. A new required question
+  also applies to plans still in draft: they need an answer before they can be submitted.</p>
+
+<% @template.asked.each do |section| %>
+  <% origin = PlanDriven::Interview.origin(section.key, template: @base) %>
+  <div class="card question" id="question_<%= section.key %>">
+    <%= form_with url: configuration_question_path, method: :post do %>
+      <%= hidden_field_tag :key, section.key %>
+      <div class="row" style="justify-content:space-between">
+        <span><code><%= section.key %></code>
+          <span class="pill <%= origin == "default" ? "" : "wait" %>"><%= origin %></span>
+          <span class="muted" style="font-size:13px"><%= section.group %></span></span>
+        <label class="check"><%= hidden_field_tag :required, "0", id: nil %>
+          <%= check_box_tag :required, "1", section.required, id: "required_#{section.key}" %> required</label>
+      </div>
+      <div class="grid2">
+        <div><label for="title_<%= section.key %>">Title</label>
+          <%= text_field_tag :title, section.title, id: "title_#{section.key}" %></div>
+        <div><label for="question_text_<%= section.key %>">Question</label>
+          <%= text_field_tag :question, section.question, id: "question_text_#{section.key}" %></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button type="submit">Save</button>
+        <% unless origin == "default" %>
+          <button type="submit" name="remove" value="1"><%= origin == "added" ? "Remove" : "Back to the default" %></button>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+
+<div class="card" id="new_question">
+  <h3 style="margin-top:0">Add a question</h3>
+  <%= form_with url: configuration_question_path, method: :post do %>
+    <div class="grid2">
+      <div><label for="new_key">Key <small>lower case and _, like success_metric</small></label>
+        <%= text_field_tag :key, nil, id: "new_key", pattern: "[a-z][a-z0-9_]{1,39}", required: true %></div>
+      <div><label for="new_title">Title</label>
+        <%= text_field_tag :title, nil, id: "new_title", required: true %></div>
+    </div>
+    <label for="new_question_text">Question</label>
+    <%= text_field_tag :question, nil, id: "new_question_text", required: true,
+                       placeholder: "How will we know it worked?" %>
+    <div class="row" style="margin-top:10px">
+      <label for="new_group" style="margin:0">Plan section group</label>
+      <%= select_tag :group, options_for_select(PlanDriven::Template::GROUPS, "Overview"), id: "new_group" %>
+      <label class="check"><%= hidden_field_tag :required, "0", id: nil %>
+        <%= check_box_tag :required, "1", false, id: "new_required" %> required</label>
+      <button type="submit" class="primary" style="margin-left:auto">Add question</button>
+    </div>
+  <% end %>
+</div>
+<%= button_to "List the questions", configuration_check_path(do: "questions"), form: { style: "display:inline" } %>

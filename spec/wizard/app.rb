@@ -41,7 +41,9 @@ app = Rack::MockRequest.new(Rails.application)
 local = { "REMOTE_ADDR" => "127.0.0.1" }
 checks = {
   "/plan_driven" => ["PD-1", "Check the setup"],
-  "/plan_driven/plans/new" => ["What are we building?", "Draft the plan"],
+  "/plan_driven/plans/new" => ["What are we building?", "Draft the plan", "earlier decisions (optional)"],
+  "/plan_driven/configuration" => ["Connections", "Paste the Cursor key", "Interview questions", "Add a question",
+                                   "config/plan_driven/interview.yml"],
   "/plan_driven/plans/PD-1" => ["<strong>category</strong>", "What is too short", "Run the guards"],
   "/plan_driven/plans/PD-1/approve" => ["review", "submit it on the Plan step"],
   "/plan_driven/plans/PD-1/tickets" => ["Migration: Create categories", "categories exist"],
