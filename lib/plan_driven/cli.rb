@@ -19,7 +19,7 @@ module PlanDriven
       "new" => ["TITLE", "Interview in the terminal, then draft the plan from your answers and the schema"],
       "list" => ["", "Every plan and its phase"],
       "show" => ["PLAN", "Print the plan, or one section with --section"],
-      "edit" => ["PLAN SECTION", "Edit a section in $EDITOR"],
+      "edit" => ["PLAN SECTION", "Edit a section in $EDITOR, or replace it with --from FILE"],
       "redraft" => ["PLAN SECTION \"instruction\"", "Have the model rewrite one section"],
       "check" => ["PLAN", "Run the plan guards"],
       "submit" => ["PLAN", "Send the plan for approval (guards must pass)"],

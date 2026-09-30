@@ -1,0 +1,24 @@
+<div class="card row">
+  <span class="muted">Run the plan's Cucumber scenarios on the merged code, then write the report that ties
+    every acceptance criterion to its proof.</span>
+  <span style="margin-left:auto"></span>
+  <%= run_button "Run the evidence", "evidence" %>
+  <%= run_button "Tokens & cost", "usage" %>
+  <%= run_button "Write the delivery report", "report", {}, primary: true %>
+</div>
+
+<% if (run = @plan.evidence_runs.last) %>
+  <div class="card">
+    <strong>Last evidence run</strong>
+    <span class="pill <%= run.passed? ? "good" : "bad" %>"><%= run.status %></span>
+    <span class="muted"><%= run.scenarios.size %> scenarios<%= " at #{run.commit_sha.to_s[0, 7]}" if run.commit_sha %></span>
+  </div>
+<% end %>
+
+<% files = %w[delivery-report.html delivery-report.pdf].select { |name| PlanDriven::Renderer.directory(@plan).join(name).file? } %>
+<% if files.any? %>
+  <div class="card">
+    <strong>Delivery report</strong>
+    <% files.each do |name| %> · <%= link_to name, plan_file_path(@plan.key, name), target: "_blank", rel: "noopener" %><% end %>
+  </div>
+<% end %>

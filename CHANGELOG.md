@@ -8,6 +8,12 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- The browser wizard: a Rails engine the install generator mounts at `/plan_driven`, in
+  development only. It walks a plan through the interview, plan, approval, tickets, agents
+  and evidence with Back and Next, and every button runs the matching `plan-driven` command in
+  the background, with the command and its live output shown beside the form. Only a fixed
+  list of commands can run, for local requests only (`config.wizard_enabled`).
+- `plan-driven edit PLAN SECTION --from FILE` replaces a section with a file's contents.
 - Tokens and cost. Every model call (drafting, redrafts, tickets) and every agent run is
   recorded with its tokens and duration. `plan-driven usage PLAN` prints them, and the delivery
   report has a Tokens and cost table. `config.token_prices` turns tokens into dollars.

@@ -32,6 +32,7 @@ require_relative "plan_driven/repository"
 require_relative "plan_driven/renderer"
 require_relative "plan_driven/evidence"
 require_relative "plan_driven/delivery"
+require_relative "plan_driven/wizard"
 require_relative "plan_driven/railtie" if defined?(Rails::Railtie)
 
 module PlanDriven

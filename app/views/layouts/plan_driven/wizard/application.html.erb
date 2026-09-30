@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= content_for?(:title) ? yield(:title) : "plan_driven" %></title>
+  <%= csrf_meta_tags %>
+  <style>
+    :root { --ink:#1f2330; --muted:#6b7280; --line:#e5e7eb; --bg:#f7f7f9; --accent:#cc342d; --ok:#15803d; --warn:#b45309; --bad:#b91c1c; }
+    * { box-sizing: border-box; }
+    body { margin:0; font:15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; color:var(--ink); background:var(--bg); }
+    a { color:var(--accent); }
+    header.top { display:flex; align-items:center; gap:16px; padding:12px 24px; background:#fff; border-bottom:1px solid var(--line); }
+    header.top .brand { font-weight:700; text-decoration:none; color:var(--ink); }
+    header.top .brand span { color:var(--accent); }
+    header.top form { margin-left:auto; display:flex; gap:6px; align-items:center; color:var(--muted); font-size:13px; }
+    .layout { display:grid; grid-template-columns:minmax(0, 1fr) minmax(360px, 42%); min-height:calc(100vh - 53px); }
+    main { padding:24px 32px 48px; }
+    aside.terminal { background:#0f1117; color:#d6d9e0; display:flex; flex-direction:column; position:sticky; top:0; height:calc(100vh - 53px); }
+    .terminal .bar { display:flex; align-items:center; gap:8px; padding:10px 14px; border-bottom:1px solid #232734; font-size:12px; color:#8b93a7; }
+    .terminal .bar .state { margin-left:auto; padding:2px 8px; border-radius:10px; background:#232734; }
+    .terminal .bar .state.running { background:#1e3a8a; color:#dbeafe; }
+    .terminal .bar .state.succeeded { background:#14532d; color:#dcfce7; }
+    .terminal .bar .state.failed { background:#7f1d1d; color:#fee2e2; }
+    .terminal pre { margin:0; padding:14px; overflow:auto; flex:1; font:13px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; white-space:pre-wrap; word-break:break-word; }
+    .terminal .cmd { color:#fbbf24; }
+    .terminal .ok { color:#4ade80; } .terminal .warn { color:#fbbf24; } .terminal .bad { color:#f87171; }
+    .terminal .empty { color:#6b7280; padding:14px; font-size:13px; }
+    h1 { font-size:24px; margin:0 0 4px; } h2 { font-size:18px; margin:28px 0 8px; } h3 { font-size:15px; margin:18px 0 6px; }
+    .muted { color:var(--muted); }
+    .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px 18px; margin:12px 0; }
+    .steps { display:flex; gap:4px; margin:16px 0 20px; padding:0; list-style:none; }
+    .steps li { flex:1; }
+    .steps a, .steps span { display:block; padding:8px 10px; border-radius:8px; font-size:13px; text-decoration:none; color:var(--muted); background:#eef0f3; }
+    .steps a { color:var(--ink); background:#fff; border:1px solid var(--line); }
+    .steps .here { background:var(--accent); color:#fff; border-color:var(--accent); }
+    .steps b { display:block; font-size:14px; }
+    .nav { display:flex; justify-content:space-between; margin-top:28px; }
+    button, .button { font:inherit; font-size:14px; padding:7px 14px; border-radius:8px; border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer; text-decoration:none; display:inline-block; }
+    button.primary, .button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+    button:disabled, .button.disabled { opacity:.45; cursor:not-allowed; pointer-events:none; }
+    body.busy form button { opacity:.45; pointer-events:none; }
+    input[type=text], textarea { font:inherit; width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; }
+    textarea { min-height:90px; font:13px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    header.top input[type=text] { width:260px; padding:4px 8px; font-size:13px; }
+    label { display:block; font-weight:600; margin:14px 0 4px; }
+    label small { font-weight:400; color:var(--muted); }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .row input[type=text] { flex:1; min-width:180px; }
+    table { border-collapse:collapse; width:100%; font-size:14px; }
+    th, td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+    .pill { display:inline-block; font-size:12px; padding:1px 8px; border-radius:10px; background:#eef0f3; }
+    .pill.good { background:#dcfce7; color:var(--ok); } .pill.bad { background:#fee2e2; color:var(--bad); } .pill.wait { background:#fef3c7; color:var(--warn); }
+    .errors li { color:var(--bad); } .warnings li { color:var(--warn); }
+    details.section { background:#fff; border:1px solid var(--line); border-radius:10px; margin:8px 0; }
+    details.section > summary { padding:10px 14px; cursor:pointer; font-weight:600; }
+    details.section > div { padding:0 16px 14px; }
+    .doc table { font-size:13px; } .doc pre { background:#f3f4f6; padding:10px; border-radius:6px; overflow:auto; font-size:12px; }
+    .flash { padding:10px 14px; border-radius:8px; margin-bottom:12px; background:#fee2e2; color:var(--bad); }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="<%= root_path %>">plan<span>_</span>driven <span class="muted" style="font-weight:400">wizard</span></a>
+    <%= form_with url: actor_path, method: :post do |f| %>
+      acting as <%= f.text_field :actor, value: acting_as %> <button type="submit">Set</button>
+    <% end %>
+  </header>
+  <div class="layout">
+    <main>
+      <% if flash[:alert] %><div class="flash"><%= flash[:alert] %></div><% end %>
+      <%= yield %>
+    </main>
+    <aside class="terminal" data-job="<%= current_job && job_path(current_job.id) %>"
+           data-plan-url="<%= plan_path("PLAN_KEY") %>" data-running="<%= current_job&.state&.dig("status") == "running" %>">
+      <div class="bar">
+        <span>●</span><span>terminal · what the wizard runs</span>
+        <span class="state <%= current_job&.state&.dig("status") %>"><%= current_job ? current_job.state["status"] : "idle" %></span>
+      </div>
+      <% if current_job %>
+        <pre id="term"><span class="cmd">$ <%= current_job.state["command"] %></span>
+<%= current_job.output %></pre>
+      <% else %>
+        <div class="empty">Every button on the left runs one plan-driven command. It shows up here, with its output, exactly as it would in your terminal.</div>
+      <% end %>
+    </aside>
+  </div>
+  <script>
+    (function () {
+      var aside = document.querySelector("aside.terminal");
+      var url = aside.dataset.job;
+      if (!url) return;
+      var pre = document.getElementById("term");
+      var badge = aside.querySelector(".state");
+      var wasRunning = aside.dataset.running === "true";
+      function escape(text) { return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+      function paint(text) {
+        return escape(text).split("\n").map(function (line) {
+          if (/^\s*✓/.test(line)) return '<span class="ok">' + line + "</span>";
+          if (/^\s*!/.test(line)) return '<span class="warn">' + line + "</span>";
+          if (/^\s*✗/.test(line)) return '<span class="bad">' + line + "</span>";
+          return line;
+        }).join("\n");
+      }
+      function render(job) {
+        pre.innerHTML = '<span class="cmd">$ ' + escape(job.command) + "</span>\n" + paint(job.output);
+        pre.scrollTop = pre.scrollHeight;
+        badge.textContent = job.status;
+        badge.className = "state " + job.status;
+      }
+      function poll() {
+        fetch(url, { headers: { Accept: "application/json" } }).then(function (r) { return r.json(); }).then(function (job) {
+          render(job);
+          if (job.status === "running") { document.body.classList.add("busy"); return setTimeout(poll, 600); }
+          document.body.classList.remove("busy");
+          if (!wasRunning) return;
+          setTimeout(function () {
+            if (job.plan && !/\/plans\/PD-/.test(location.pathname)) {
+              location.href = aside.dataset.planUrl.replace("PLAN_KEY", job.plan) + location.search;
+            } else {
+              location.reload();
+            }
+          }, 900);
+        });
+      }
+      poll();
+    })();
+  </script>
+</body>
+</html>

@@ -4,4 +4,5 @@
 require "plan_driven"
 require "plan_driven/cli"
 
+$stdout.sync = true
 exit PlanDriven::CLI.start(ARGV)

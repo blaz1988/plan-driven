@@ -1,0 +1,21 @@
+<% content_for :title, "New plan" %>
+<h1>New plan</h1>
+<p class="muted">The same questions <code>plan-driven new</code> asks in the terminal. Your answers go to the
+  command as its input; the model drafts the rest from them and your schema, then the guards check it.</p>
+
+<%= form_with url: plans_path, method: :post do |f| %>
+  <label for="title">Title of the change</label>
+  <%= f.text_field :title, value: params[:title], id: "title", required: true %>
+
+  <% @template.asked.each do |section| %>
+    <label for="answer_<%= section.key %>"><%= section.title %>
+      <small><%= section.question %><%= " (optional)" unless section.required %></small></label>
+    <%= text_area_tag "answers[#{section.key}]", params.dig(:answers, section.key), id: "answer_#{section.key}",
+                      rows: section.required ? 4 : 2 %>
+  <% end %>
+
+  <div class="nav">
+    <%= link_to "← Back", root_path, class: "button" %>
+    <button type="submit" class="primary">Draft the plan →</button>
+  </div>
+<% end %>

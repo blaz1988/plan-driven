@@ -1,0 +1,43 @@
+<div class="card row">
+  <span class="muted">Each ready ticket goes to its own coding agent, which opens one pull request.
+    Tickets wait for the ones they depend on.</span>
+  <span style="margin-left:auto"></span>
+  <%= run_button "Refresh agents & PRs", "status" %>
+  <%= run_button "Start ready tickets", "develop", {}, primary: true,
+                 disabled: !%w[tickets_approved in_development].include?(@plan.status) %>
+</div>
+
+<div class="card">
+  <table>
+    <thead><tr><th>Ticket</th><th>Status</th><th>Agent / PR</th><th></th></tr></thead>
+    <tbody>
+      <% @plan.tickets.each do |ticket| %>
+        <tr>
+          <td><strong><%= ticket.key %></strong> <%= ticket.title %>
+            <% if ticket.status == "approved" && ticket.blocked_by.any? %><div class="muted">waits for <%= ticket.blocked_by.join(", ") %></div><% end %></td>
+          <td><span class="pill <%= { "merged" => "good", "failed" => "bad", "changes_requested" => "bad" }.fetch(ticket.status, "wait") %>"><%= ticket.status.tr("_", " ") %></span></td>
+          <td>
+            <% if ticket.agent_url.present? %><%= link_to "agent", ticket.agent_url, target: "_blank", rel: "noopener" %><% end %>
+            <% if ticket.pr_url.present? %><%= link_to "PR ##{ticket.pr_number}", ticket.pr_url, target: "_blank", rel: "noopener" %><% end %>
+          </td>
+          <td>
+            <% if %w[pr_open pr_approved changes_requested].include?(ticket.status) %>
+              <div class="row">
+                <%= run_button "Review", "review", { ticket: ticket.key } %>
+                <%= run_button "Approve PR", "approve-pr", { ticket: ticket.key }, disabled: ticket.status != "pr_open" %>
+                <%= run_button "Merge", "merge", { ticket: ticket.key }, primary: true, disabled: ticket.status != "pr_approved" %>
+              </div>
+              <%= form_with url: run_plan_path(@plan.key), method: :post, class: "row", html: { style: "margin-top:6px" } do %>
+                <%= hidden_field_tag :do, "feedback" %><%= hidden_field_tag :step, "agents" %><%= hidden_field_tag :ticket, ticket.key %>
+                <%= text_field_tag :feedback, nil, placeholder: "ask the agent for a change" %>
+                <button type="submit">Send</button>
+              <% end %>
+            <% elsif ticket.status == "failed" || ticket.ready? %>
+              <%= run_button "Start #{ticket.key}", "develop", { tickets: [ticket.key] } %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

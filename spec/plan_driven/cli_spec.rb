@@ -44,6 +44,16 @@ RSpec.describe PlanDriven::CLI do
     expect(PlanDriven::Plan.last.section("who")).to eq("Team Jarvis")
   end
 
+  it "replaces a section from a file, as a new revision" do
+    run("new", "Polymorphic form ownership", input: interview_input)
+    File.write(@root.join("who.md"), "Team Jarvis and Ana from QA\n")
+
+    status, text = run("edit", "PD-1", "who", "--from", @root.join("who.md").to_s)
+    expect(status).to eq(0)
+    expect(text).to include("Who updated; PD-1 is now revision 2 (draft)")
+    expect(PlanDriven::Plan.last.section("who")).to eq("Team Jarvis and Ana from QA\n")
+  end
+
   it "insists on required answers" do
     input = "\n#{interview_input}"
     _, text = run("new", "Title", input: input)

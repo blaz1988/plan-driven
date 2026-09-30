@@ -1,0 +1,31 @@
+<% content_for :title, "plan_driven" %>
+<h1>Implementation plans</h1>
+<p class="muted">From an idea to merged pull requests, one step at a time. Each button runs the same
+  <code>plan-driven</code> command you could type yourself; the panel on the right shows it.</p>
+
+<div class="row">
+  <%= link_to "New plan", new_plan_path, class: "button primary" %>
+  <%= button_to "Check the setup", run_path(do: "doctor"), form: { style: "display:inline" } %>
+</div>
+
+<% if @plans.any? %>
+  <div class="card">
+    <table>
+      <thead><tr><th>Plan</th><th>Title</th><th>Phase</th><th>Revision</th><th>Tickets</th><th></th></tr></thead>
+      <tbody>
+        <% @plans.each do |plan| %>
+          <tr>
+            <td><strong><%= plan.key %></strong></td>
+            <td><%= plan.title %></td>
+            <td><span class="pill <%= plan.status == "delivered" ? "good" : "wait" %>"><%= plan.status.tr("_", " ") %></span></td>
+            <td><%= plan.revision %></td>
+            <td><%= plan.tickets.size %></td>
+            <td><%= link_to "Open", plan_path(plan.key) %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% else %>
+  <div class="card muted">No plans yet. Start with “New plan”.</div>
+<% end %>

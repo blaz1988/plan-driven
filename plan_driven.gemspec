@@ -27,7 +27,8 @@ Gem::Specification.new do |spec|
   spec.metadata["bug_tracker_uri"] = "#{spec.homepage}/issues"
   spec.metadata["rubygems_mfa_required"] = "true"
 
-  spec.files = Dir["lib/**/*.{rb,css,tt,mjs}", "exe/*", "README.md", "CHANGELOG.md", "LICENSE.txt"]
+  spec.files = Dir["lib/**/*.{rb,css,tt,mjs}", "app/**/*.{rb,erb}", "config/routes.rb", "exe/*",
+                   "README.md", "CHANGELOG.md", "LICENSE.txt"]
   spec.bindir = "exe"
   spec.executables = ["plan-driven"]
   spec.require_paths = ["lib"]

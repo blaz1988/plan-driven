@@ -44,7 +44,11 @@ module PlanDriven
         plan = find_plan(reference)
         section = PlanDriven.configuration.template[key] or
           raise ArgumentError, "Which section? One of: #{PlanDriven.configuration.template.keys.join(", ")}"
-        text = edit_in_editor(plan.section(section.key), "#{plan.key}-#{section.key}")
+        text = if @options[:from]
+                 File.read(@options[:from], encoding: "UTF-8")
+               else
+                 edit_in_editor(plan.section(section.key), "#{plan.key}-#{section.key}")
+               end
         return ui.muted("No change.") if text.strip == plan.section(section.key).strip
 
         delivery.edit_section(plan, section.key, text)

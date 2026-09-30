@@ -1,0 +1,40 @@
+<% roles = PlanDriven.configuration.plan_approvals.map(&:to_s) %>
+<p class="muted">Approvals belong to a revision: editing the plan after this sends it back for approval.
+  You're signing as <strong><%= acting_as %></strong>.</p>
+
+<div class="card">
+  <table>
+    <thead><tr><th>Role</th><th>Revision <%= @plan.revision %></th><th></th></tr></thead>
+    <tbody>
+      <% roles.each do |role| %>
+        <% approval = @plan.approvals_for_revision.where(role: role).order(:created_at).last %>
+        <tr>
+          <td><strong><%= role %></strong></td>
+          <td>
+            <% if approval&.decision == "approved" %>
+              <span class="pill good">approved</span> <span class="muted">by <%= approval.actor %></span>
+            <% elsif approval %>
+              <span class="pill bad"><%= approval.decision %></span> <span class="muted"><%= approval.note %></span>
+            <% else %>
+              <span class="pill wait">waiting</span>
+            <% end %>
+          </td>
+          <td>
+            <% if @plan.status == "in_review" && approval&.decision != "approved" %>
+              <%= form_with url: run_plan_path(@plan.key), method: :post, class: "row" do %>
+                <%= hidden_field_tag :step, "approve" %><%= hidden_field_tag :role, role %>
+                <%= text_field_tag :note, nil, placeholder: "note (needed to send it back)" %>
+                <button type="submit" name="do" value="approve" class="primary">Approve</button>
+                <button type="submit" name="do" value="reject">Send back</button>
+              <% end %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<% if @plan.status == "draft" %>
+  <p class="muted">The plan is a draft; submit it on the Plan step first.</p>
+<% end %>

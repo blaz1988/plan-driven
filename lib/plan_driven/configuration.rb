@@ -50,6 +50,10 @@ module PlanDriven
     # Anything the LLM should know that the schema doesn't show.
     attr_accessor :extra_context
 
+    # The browser wizard at /plan_driven runs commands on this machine. nil means development
+    # only; it answers local requests either way.
+    attr_accessor :wizard_enabled
+
     # The plan's sections. Template.default mirrors the usual Confluence implementation plan.
     attr_writer :template
 
@@ -98,6 +102,7 @@ module PlanDriven
       @team_rules = []
       @pdf_renderer = nil
       @extra_context = nil
+      @wizard_enabled = nil
     end
 
     def llm_model

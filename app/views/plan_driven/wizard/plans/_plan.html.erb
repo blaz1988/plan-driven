@@ -1,0 +1,52 @@
+<% report = PlanDriven::Guards::Report.from_h(@plan.guard_report) %>
+<div class="card">
+  <div class="row">
+    <strong>Guards</strong>
+    <span class="pill <%= report.ok? ? "good" : "bad" %>"><%= report.ok? ? "all checks passed" : "#{report.errors.size} to fix" %></span>
+    <span style="margin-left:auto"></span>
+    <%= run_button "Run the guards", "check" %>
+    <%= run_button "Write HTML & PDF", "pdf" %>
+    <%= run_button "Submit for review", "submit", primary: true, disabled: !(@plan.status == "draft" && report.ok?) %>
+  </div>
+  <%= guard_list(report) %>
+  <p class="muted" style="margin:6px 0 0">
+    <% %w[plan.html plan.pdf].each do |name| %>
+      <% if PlanDriven::Renderer.directory(@plan).join(name).file? %>
+        <%= link_to name, plan_file_path(@plan.key, name), target: "_blank", rel: "noopener" %>
+      <% end %>
+    <% end %>
+  </p>
+</div>
+
+<p class="muted">Every section can be changed: edit the text yourself, or tell the model what to change.
+  Either one is a new revision, checked by the guards again<%= ", and sends an approved plan back to draft" if @plan.status != "draft" %>.</p>
+
+<% @template.grouped.each do |group, sections| %>
+  <% next if sections.empty? %>
+  <h2><%= group %></h2>
+  <% sections.each do |section| %>
+    <details class="section" id="<%= section.key %>" <%= "open" if params[:anchor] == section.key %>>
+      <summary><%= section.title %>
+        <% if @plan.section(section.key).strip.empty? %><span class="pill wait">empty</span><% end %></summary>
+      <div>
+        <div class="doc"><%= markdown(@plan.section(section.key)) %></div>
+        <% if @plan.editable? %>
+          <h3>Edit the text</h3>
+          <%= form_with url: run_plan_path(@plan.key), method: :post do |f| %>
+            <%= hidden_field_tag :do, "edit" %><%= hidden_field_tag :step, "plan" %>
+            <%= hidden_field_tag :section, section.key %><%= hidden_field_tag :anchor, section.key %>
+            <%= text_area_tag :text, @plan.section(section.key), rows: 10 %>
+            <p><button type="submit">Save <%= section.title %></button></p>
+          <% end %>
+          <h3>Or ask for a redraft</h3>
+          <%= form_with url: run_plan_path(@plan.key), method: :post, class: "row" do |f| %>
+            <%= hidden_field_tag :do, "redraft" %><%= hidden_field_tag :step, "plan" %>
+            <%= hidden_field_tag :section, section.key %><%= hidden_field_tag :anchor, section.key %>
+            <%= text_field_tag :instruction, nil, placeholder: "e.g. add a colour column to categories" %>
+            <button type="submit">Redraft</button>
+          <% end %>
+        <% end %>
+      </div>
+    </details>
+  <% end %>
+<% end %>

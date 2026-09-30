@@ -23,6 +23,10 @@ module PlanDriven
         create_file "docs/plans/.keep"
       end
 
+      def mount_wizard
+        route 'mount PlanDriven::Wizard::Engine, at: "/plan_driven" if Rails.env.development?'
+      end
+
       def show_next_steps
         say <<~TEXT
 
@@ -30,6 +34,9 @@ module PlanDriven
             bin/rails db:migrate
             bundle exec plan-driven configure   # keys for the LLM, Cursor and GitHub
             bundle exec plan-driven new "Short title of the change"
+
+          Or do it all in the browser: start the app and open /plan_driven
+          (development only; every step runs the same plan-driven command).
         TEXT
       end
     end

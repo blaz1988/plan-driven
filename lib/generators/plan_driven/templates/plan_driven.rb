@@ -41,5 +41,8 @@ if defined?(PlanDriven.configure)
     #   "Service objects live in app/services and respond to .call.",
     #   "Authorization goes through Pundit policies, never in controllers."
     # ]
+
+    # The browser wizard at /plan_driven: development only by default, local requests always.
+    # config.wizard_enabled = true
   end
 end

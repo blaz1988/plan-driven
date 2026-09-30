@@ -67,6 +67,7 @@ repository. The planner and the five agents ran on Claude Opus 5.5 through Curso
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Getting your app ready](#getting-your-app-ready)
+- [The browser wizard](#the-browser-wizard)
 - [Walkthrough: one feature from idea to merged](#walkthrough-one-feature-from-idea-to-merged)
 - [Guards](#guards)
 - [What the agent is told](#what-the-agent-is-told)
@@ -270,6 +271,43 @@ config.extra_context = "Gather lists community events. An event has an organizer
 
 **Who approves.** `plan_approvals` and `ticket_approvals` list the roles that must sign off,
 for example `%w[review qa devops director]`. One person can hold every role on a small team.
+
+## The browser wizard
+
+Not everyone wants to drive a delivery from the terminal. The install generator mounts a
+wizard in your app, in development only:
+
+```ruby
+# config/routes.rb
+mount PlanDriven::Wizard::Engine, at: "/plan_driven" if Rails.env.development?
+```
+
+Start the app and open `http://localhost:3000/plan_driven`. It walks a plan through the same
+five steps, with Back and Next: **Plan** (the interview, then read, edit or redraft any section
+and submit), **Approve**, **Tickets**, **Agents & PRs** and **Proof & report**. A step opens
+once the plan has reached it.
+
+The wizard is a front end for the CLI, not a second implementation. Every button runs one
+`plan-driven` command in the background, and the panel on the right shows that command and its
+output as it runs, exactly as you'd see it in a terminal:
+
+```
+$ bin/plan-driven edit PD-3 database_changes --from tmp/plan_driven/wizard/sections/PD-3-database_changes-1f2e.md --yes
+✓ Database changes updated; PD-3 is now revision 2 (draft)
+✓ All checks passed
+```
+
+So anything done in the browser can be repeated, scripted or reviewed from the terminal, and
+the audit trail is the same either way. A few things to know:
+
+- Only a fixed list of commands can run, built from the form fields as an argument list, never
+  through a shell. `configure` isn't on it: keys are still set in the terminal, and the wizard
+  never shows them.
+- It answers local requests only, and only in development. `config.wizard_enabled = true`
+  turns it on in another environment, still for local requests only.
+- "Acting as" at the top sets `PLAN_DRIVEN_ACTOR` for the commands it runs, so approvals are
+  recorded under the name you give; it defaults to your git identity.
+- Each run is kept in `tmp/plan_driven/wizard/`: the command, its output and its exit status.
 
 ## Walkthrough: one feature from idea to merged
 

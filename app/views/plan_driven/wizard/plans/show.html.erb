@@ -1,0 +1,36 @@
+<% content_for :title, "#{@plan.key} #{@plan.title}" %>
+<p class="muted" style="margin:0"><%= link_to "All plans", root_path %></p>
+<h1><%= @plan.key %> · <%= @plan.title %></h1>
+<p class="muted" style="margin:0">
+  <span class="pill <%= @plan.status == "delivered" ? "good" : "wait" %>"><%= @plan.status.tr("_", " ") %></span>
+  revision <%= @plan.revision %> · <%= PlanDriven::Workflow::PLAN_DESCRIPTIONS[@plan.status] %>
+</p>
+
+<ol class="steps">
+  <% PlanDriven::Wizard::Steps::ORDER.each_with_index do |(key, title, hint), index| %>
+    <li>
+      <% if key == @step %>
+        <span class="here"><b><%= index + 1 %>. <%= title %></b><%= hint %></span>
+      <% elsif PlanDriven::Wizard::Steps.reached?(@plan, key) %>
+        <%= link_to plan_path(@plan.key, key) do %><b><%= index + 1 %>. <%= title %></b><%= hint %><% end %>
+      <% else %>
+        <span><b><%= index + 1 %>. <%= title %></b><%= hint %></span>
+      <% end %>
+    </li>
+  <% end %>
+</ol>
+
+<%= render @step %>
+
+<% keys = PlanDriven::Wizard::Steps.keys; position = keys.index(@step) %>
+<div class="nav">
+  <% if position.zero? %>
+    <%= link_to "← All plans", root_path, class: "button" %>
+  <% else %>
+    <%= link_to "← Back", plan_path(@plan.key, keys[position - 1]), class: "button" %>
+  <% end %>
+  <% if (following = keys[position + 1]) %>
+    <%= link_to "Next →", plan_path(@plan.key, following),
+                class: "button primary #{"disabled" unless PlanDriven::Wizard::Steps.reached?(@plan, following)}" %>
+  <% end %>
+</div>

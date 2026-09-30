@@ -1,0 +1,42 @@
+<% can_draft = %w[approved ticketed].include?(@plan.status) %>
+<div class="card">
+  <%= form_with url: run_plan_path(@plan.key), method: :post, class: "row" do %>
+    <%= hidden_field_tag :do, "tickets" %><%= hidden_field_tag :step, "tickets" %>
+    <%= text_field_tag :instruction, nil, placeholder: @plan.tickets.any? ? "what to change, e.g. split T2 into model and UI" : "optional guidance for the tickets",
+                       disabled: !can_draft %>
+    <button type="submit" class="<%= "primary" if @plan.tickets.empty? %>" <%= "disabled" unless can_draft %>>
+      <%= @plan.tickets.any? ? "Redraft tickets" : "Draft tickets" %></button>
+  <% end %>
+</div>
+
+<% if @plan.tickets.any? %>
+  <div class="card">
+    <table>
+      <thead><tr><th>Ticket</th><th>Type</th><th>Est.</th><th>Depends on</th><th>Status</th></tr></thead>
+      <tbody>
+        <% @plan.tickets.each do |ticket| %>
+          <tr>
+            <td><strong><%= ticket.key %></strong> <%= ticket.title %>
+              <details><summary class="muted">acceptance criteria</summary>
+                <ul><% ticket.criteria.each do |criterion| %><li><%= criterion.is_a?(Hash) ? criterion.values.join(" ") : criterion %></li><% end %></ul>
+              </details></td>
+            <td><%= ticket.ticket_type %></td>
+            <td><%= ticket.estimate %></td>
+            <td><%= ticket.dependencies.join(", ").presence || "—" %></td>
+            <td><span class="pill"><%= ticket.status.tr("_", " ") %></span></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if @plan.status == "ticketed" %>
+    <div class="card row">
+      <span>Approvals needed: <strong><%= @plan.missing_ticket_approvals.join(", ").presence || "none" %></strong></span>
+      <span style="margin-left:auto"></span>
+      <% @plan.missing_ticket_approvals.each do |role| %>
+        <%= run_button "Approve tickets as #{role}", "approve-tickets", { role: role }, primary: true %>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>
