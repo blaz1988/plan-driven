@@ -85,7 +85,9 @@ module PlanDriven
         success ok_message if report.errors.empty? && report.warnings.empty?
       end
 
+      # On a terminal, the last column is cut to fit its width, so rows don't wrap.
       def table(headers, rows)
+        rows = fit_last_column(headers, rows)
         widths = headers.each_index.map { |i| ([headers[i]] + rows.map { |row| row[i] }).map { |v| v.to_s.length }.max }
         line = ->(cells) { cells.each_with_index.map { |cell, i| cell.to_s.ljust(widths[i]) }.join("  ") }
         say paint(line.call(headers), :bold)
@@ -93,6 +95,27 @@ module PlanDriven
       end
 
       private
+
+      def fit_last_column(headers, rows)
+        columns = terminal_width or return rows
+        widths = headers[0..-2].each_index.map do |i|
+          ([headers[i]] + rows.map do |row|
+            row[i]
+          end).map { |v| v.to_s.length }.max
+        end
+        room = columns - widths.sum - (2 * widths.size) - 1
+        return rows if room < 20
+
+        rows.map { |row| row[0..-2] + [row.last.to_s.truncate(room)] }
+      end
+
+      def terminal_width
+        return unless output.respond_to?(:tty?) && output.tty? && output.respond_to?(:winsize)
+
+        output.winsize[1].then { |columns| columns.positive? ? columns : nil }
+      rescue StandardError
+        nil
+      end
 
       def piped?
         !(input.respond_to?(:tty?) && input.tty?)

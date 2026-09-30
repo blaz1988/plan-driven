@@ -32,6 +32,18 @@ RSpec.describe PlanDriven::CLI do
     expect(text).to include("plan drafted", "1,200", "$0.01", "1,200 tokens, $0.01")
   end
 
+  it "cuts a table's last column to the terminal's width" do
+    terminal = StringIO.new
+    def terminal.tty? = true
+    def terminal.winsize = [24, 40]
+    ui = PlanDriven::CLI::UI.new(output: terminal)
+    ui.table(%w[Key Details], [["PD-1", "a long line of details that would wrap"]])
+
+    lines = terminal.string.gsub(/\e\[[\d;]*m/, "").lines.map(&:chomp)
+    expect(lines.last).to eq("PD-1  a long line of details that wo...")
+    expect(lines.map(&:length).max).to be < 40
+  end
+
   it "rejects unknown commands" do
     expect(run("deploy")).to eq([1, "✗ Unknown command `deploy`. `plan-driven help` lists them.\n"])
   end
