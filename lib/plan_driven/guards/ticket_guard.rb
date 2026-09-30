@@ -129,8 +129,7 @@ module PlanDriven
         touched = @tickets.flat_map { |ticket| ticket["touches"] }.uniq
         planned = MigrationGuard.new(@sections["database_changes"].to_s, schema: @schema)
         new_tables = planned.new_tables
-        mentioned = @schema.tables.select { |table| @sections["database_changes"].to_s.match?(/\b#{table}\b/) }
-        (new_tables + mentioned).uniq.each do |table|
+        (new_tables + planned.changed_tables).uniq.each do |table|
           next if touched.include?(table)
 
           report.warning("Database changes mention #{table}, but no ticket touches it")

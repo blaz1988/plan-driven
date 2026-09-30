@@ -103,6 +103,17 @@ RSpec.describe PlanDriven::Guards::TicketGuard do
         .to include("Database changes mention snapshots, but no ticket touches it")
     end
 
+    it "counts tables the plan changes, not tables it names as staying the same" do
+      base = Fixtures::DRAFTED["database_changes"]
+      unchanged = all_sections.merge("database_changes" => "#{base}\n\n### Tables not changed\n" \
+                                                           "`projects` keeps its current columns and indexes.")
+      changed = all_sections.merge("database_changes" => "#{base}\n\nAdd an `archived_at` column to `projects`.")
+
+      expect(check(normalized_tickets, sections: unchanged).warnings.grep(/projects/)).to eq([])
+      expect(check(normalized_tickets, sections: changed).warnings)
+        .to include("Database changes mention projects, but no ticket touches it")
+    end
+
     it "warns when a ticket touches a table that exists nowhere" do
       expect(check(with("T3", "touches" => %w[forms widgets])).warnings)
         .to include("A ticket touches widgets, which isn't in the schema or the plan's database changes")

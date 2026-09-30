@@ -18,6 +18,8 @@ module PlanDriven
       LATER_STEP = /\b(contract|clean[\s-]?up|later (step|phase|release|migration|deploy)|follow[\s-]?up)\b/i
       ROLLBACK = /\b(roll[\s-]?back|down migration|undo)\b/i
       NEGATED = /\b(no|not|never|none|nothing|don't|doesn't|won't|without|isn't|aren't)\b/i
+      UNCHANGED = /\b(not\s(be\s)?(changed|modified|touched)|unchanged|untouched|no\schanges?\b|
+                     keeps?\s(its|their)\s(current|existing)|stays?\sthe\ssame|as\s(it|they)\s(is|are)\stoday)/ix
       NOT_NULL = /\bnot[\s_-]?null\b|null:\s*false/i
       NOT_NULL_SAFE = /default|backfill|nullable first|after (the )?backfill|validate/i
       INDEX = /\badd_index\b|\bindex(es)?\b/i
@@ -70,6 +72,33 @@ module PlanDriven
       # Headings are only context ("### Removed or renamed columns"), and a negated sentence
       # ("No column is removed") changes nothing.
       def destructive_statements
+        statements.select do |statement, _heading, fenced|
+          statement.match?(DESTRUCTIVE) && (fenced || !negated?(statement))
+        end
+      end
+
+      public
+
+      # Existing tables the section changes: something is added to them or removed from them.
+      # Tables it only compares with ("same as `rsvps`") or names as staying the same
+      # ("### Tables not changed") don't count.
+      def changed_tables
+        removals = destructive_statements.reject { |statement, heading| unchanged?(statement, heading) }
+        @schema.tables.select do |table|
+          named = /\b#{Regexp.escape(table)}\b/
+          paragraph_changing(table).split("\n").any? { |line| !line.match?(UNCHANGED) } ||
+            removals.any? { |statement, _| statement.match?(named) }
+        end
+      end
+
+      private
+
+      def unchanged?(statement, heading)
+        statement.match?(UNCHANGED) || heading.to_s.match?(UNCHANGED)
+      end
+
+      # [sentence or code line, the heading above it, inside a code block?] for the whole section.
+      def statements
         heading = nil
         fenced = false
         @text.each_line.with_object([]) do |line, found|
@@ -78,13 +107,7 @@ module PlanDriven
           elsif !fenced && line.match?(/\A\#{1,6}\s/)
             heading = line
           else
-            statements = fenced ? [line] : line.split(/(?<=[.!?])\s+/)
-            statements.each do |statement|
-              next unless statement.match?(DESTRUCTIVE)
-              next if !fenced && negated?(statement)
-
-              found << [statement, heading]
-            end
+            (fenced ? [line] : line.split(/(?<=[.!?])\s+/)).each { |statement| found << [statement, heading, fenced] }
           end
         end
       end
