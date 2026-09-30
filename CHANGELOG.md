@@ -6,6 +6,24 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Tokens and cost. Every model call (drafting, redrafts, tickets) and every agent run is
+  recorded with its tokens and duration. `plan-driven usage PLAN` prints them, and the delivery
+  report has a Tokens and cost table. `config.token_prices` turns tokens into dollars.
+- Local coding agents: `config.agent_provider = :local` runs `config.agent_command` (Claude
+  Code, Codex, the Cursor CLI...) in its own git worktree per ticket, then commits, pushes and
+  opens the pull request. Feedback runs in the same worktree; the worktree is removed after
+  the merge. `{prompt_file}` in the command passes the prompt as a file instead of stdin.
+- `GitHub#create_pull`, and Cursor agent runs carry `duration_ms`.
+
+### Changed
+
+- MigrationGuard judges each removal or rename on its own sentence, or migration code line,
+  and the step it sits under. Before, the word "expand" or "contract" anywhere in Database
+  changes excused every destructive change in the section. Headings, negated sentences,
+  rollback notes and tables the plan creates are no longer read as removals.
+
 ## [0.1.0] - 2026-09-30
 
 First public release.

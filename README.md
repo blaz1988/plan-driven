@@ -72,6 +72,9 @@ repository. The planner and the five agents ran on Claude Opus 5.5 through Curso
 - [What the agent is told](#what-the-agent-is-told)
 - [Commands](#commands)
 - [Configuration](#configuration)
+- [Choosing the coding agents](#choosing-the-coding-agents)
+- [Tokens and cost](#tokens-and-cost)
+- [How it compares](#how-it-compares)
 - [Keys](#keys)
 - [Working as a team](#working-as-a-team)
 - [Troubleshooting](#troubleshooting)
@@ -95,7 +98,7 @@ repository. The planner and the five agents ran on Claude Opus 5.5 through Curso
  plan-driven approve-tickets  ─▶ tickets approved     GitHub issues created
         │
         ▼
- plan-driven develop      one Cursor cloud agent per ready ticket, one PR each
+ plan-driven develop      one agent per ready ticket (Cursor cloud, or a local CLI), one PR each
  plan-driven status       agent finished ─▶ PR open
  plan-driven review       PrGuard: scope, specs, Cucumber scenarios, CI, up to date
  plan-driven feedback     the same agent pushes a fix to the same PR
@@ -104,7 +107,7 @@ repository. The planner and the five agents ran on Claude Opus 5.5 through Curso
         │
         ▼
  plan-driven evidence     Cucumber results mapped to acceptance criteria
- plan-driven report       docs/plans/pd-1-…/delivery-report.pdf
+ plan-driven report       docs/plans/pd-1-…/delivery-report.pdf, with tokens and cost
 ```
 
 Phases are stored in your application's database, so a plan can't skip a step. Tickets can't
@@ -121,9 +124,12 @@ model as a list to fix, and a plan that still fails isn't accepted.
 
 - Ruby 3.1+ and Rails 7.0+ (see [support](#rails-and-ruby-support)).
 - The application on GitHub, with CI running on pull requests.
-- A [Cursor](https://cursor.com) account with the GitHub integration connected to that
-  repository, and a Cursor API key (Cursor dashboard, Integrations). The agents run as
-  Cursor cloud agents.
+- Coding agents, one of (see [Choosing the coding agents](#choosing-the-coding-agents)):
+  - **Cursor cloud agents** (the default): a [Cursor](https://cursor.com) account with the
+    GitHub integration connected to that repository, and a Cursor API key (Cursor dashboard,
+    Integrations).
+  - **A local agent CLI** (`agent_provider :local`): Claude Code, Codex, the Cursor CLI or any
+    command that edits files in its working directory, plus `git` push access to the repository.
 - A model for drafting plans and tickets, one of:
   - **Cursor** (`llm_provider :cursor`): any model on your Cursor account, Claude Opus 5.5 by
     default. Needs Node 22.13+ and the Cursor SDK. No other LLM key.
@@ -620,8 +626,12 @@ An error blocks the next step and a warning is shown and recorded.
 
 **MigrationGuard** reads the database changes:
 
-- removing or renaming a column or table in one step is an error, unless the plan stages it
-  with `ignored_columns`, expand and contract, or a later release;
+- removing or renaming a column or table in one step is an error. Each change is judged on its
+  own, sentence by sentence and line by line in migration code: it's accepted only when that
+  sentence stages it (`ignored_columns`, a later release, after the backfill) or when it sits
+  under a contract, cleanup or later step. Mentioning "expand" somewhere else in the section
+  doesn't excuse it. Headings, negated sentences ("No column is removed"), rollback notes and
+  tables the plan itself creates don't count as removals;
 - NOT NULL on an existing table without a default or backfill is a warning;
 - on PostgreSQL, an index that isn't built concurrently is a warning.
 
@@ -713,8 +723,9 @@ key such as `PD-1`, and `PLAN/TICKET` is a ticket such as `PD-1/T3`.
 | `evidence PLAN [--from FILE]` | Run or import Cucumber results |
 | `report PLAN` | Write the delivery report |
 | `log PLAN` | The audit trail |
+| `usage PLAN` | Tokens, time and cost per step and per agent run |
 | `configure` | Store keys in `~/.plan_driven/config` |
-| `doctor` | Check keys, repository, PDF browser and the Cursor connection |
+| `doctor` | Check keys, repository, PDF browser, and the Cursor connection or local agent command |
 
 Section keys for `show --section`, `edit` and `redraft`: `what`, `why`, `where`, `who`,
 `when`, `background`, `existing_data_structure`, `architecture`, `database_changes`,
@@ -747,11 +758,17 @@ PlanDriven.configure do |config|
   config.plan_approvals = %w[review]            # e.g. %w[review qa devops director]
   config.ticket_approvals = %w[review]
 
-  # Cursor cloud agents
-  config.agent_model = nil                      # nil uses your Cursor default
+  # Coding agents
+  config.agent_provider = :cursor               # or :local, see "Choosing the coding agents"
+  config.agent_command = nil                    # :local only, e.g. "claude -p --permission-mode acceptEdits --output-format json"
+  config.agent_timeout = 3600                   # :local only; seconds before a run is stopped
+  config.agent_model = nil                      # :cursor; nil uses your Cursor default
   config.base_branch = "main"
   config.max_parallel_agents = 3
-  config.skip_reviewer_request = false          # true: the agent doesn't request you as reviewer
+  config.skip_reviewer_request = false          # :cursor; true: the agent doesn't request you as reviewer
+
+  # Tokens and cost: dollars per million tokens, by model id. None ship with the gem.
+  config.token_prices = {}                      # { "model-id" => { input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3 } }
 
   # GitHub
   config.github_repository = nil                # "owner/name"; read from the origin remote when nil
@@ -784,6 +801,88 @@ read-only tools (read, grep, glob, ls), so it reads the application's code while
 plan and can't change a file.
 
 `config.template` replaces the plan's sections if your template differs.
+
+## Choosing the coding agents
+
+Every ticket goes to one agent, which works on its own branch and opens one pull request. The
+rest of the workflow is the same whichever agents you use: `review`, `feedback`, `approve-pr`
+and `merge` see only the pull request.
+
+**Cursor cloud agents** (`agent_provider :cursor`, the default) run on Cursor-hosted machines
+against a fresh clone of the repository, so nothing runs on your laptop and several tickets
+can run at once. `config.agent_model` picks the model.
+
+**A local agent CLI** (`agent_provider :local`) runs a command on your machine. Each ticket
+gets its own git worktree and branch under `tmp/plan_driven/agents`, so tickets don't touch
+your working copy or each other. The command gets the same prompt a cloud agent gets, on stdin,
+or wherever the command says `{prompt_file}`. When it exits cleanly, plan_driven commits what
+it left, pushes the branch and opens the pull request, using the description the agent wrote
+to `PR_DESCRIPTION.md`. Feedback runs the command again in the same worktree and pushes to the
+same pull request. After the merge, the worktree and the local branch are removed.
+
+```ruby
+config.agent_provider = :local
+
+# Claude Code
+config.agent_command = "claude -p --permission-mode acceptEdits --output-format json"
+# Codex
+config.agent_command = "codex exec --full-auto -"
+# The Cursor CLI
+config.agent_command = 'cursor-agent -p --force --output-format json "$(cat {prompt_file})"'
+```
+
+A local agent runs with your permissions and your shell, so give it only the tools it needs to
+edit and to run the test suite, and read the pull request as carefully as a cloud agent's.
+Runs longer than `config.agent_timeout` (an hour by default) are stopped. The Cursor CLI setup
+is the one tested end to end; flags change between CLI versions, so check your CLI's `--help`.
+`plan-driven doctor` checks that the command is on the `PATH`.
+
+## Tokens and cost
+
+Every model call and every agent run is recorded with the tokens it used: drafting the plan,
+each `redraft`, drafting the tickets, and each agent run and follow-up, with its duration.
+`plan-driven usage PD-1` prints them, and the delivery report has a Tokens and cost table.
+
+Prices change and differ per account, so the gem ships none: put what your provider charges in
+`config.token_prices` (dollars per million tokens, with separate cache prices), and the report
+shows dollars next to the tokens. Without a price you still get the tokens and the time.
+
+Cursor reports tokens for every cloud agent run. A local CLI's tokens are recorded when it
+prints them the way Claude Code's `--output-format json` does; otherwise only the time is.
+
+For scale, these are the five cloud agents from the demo, read back from Cursor's usage API
+(T4 and T5 include their feedback runs):
+
+| Ticket | Runs | Output tokens | Cache reads | Total tokens |
+| --- | ---: | ---: | ---: | ---: |
+| T1 migration | 1 | 13,861 | 738,595 | 791,861 |
+| T2 model rules | 1 | 21,037 | 1,519,826 | 1,596,409 |
+| T3 RSVP card | 1 | 16,611 | 1,161,514 | 1,242,945 |
+| T4 attendee list | 2 | 10,957 | 1,083,671 | 1,149,274 |
+| T5 seats on the index | 2 | 12,725 | 1,154,333 | 1,248,462 |
+| **Total** | 7 | **75,191** | **5,657,939** | **6,028,951** |
+
+94% of the tokens are cache reads, which cost a fraction of fresh input, and only 75 thousand
+are code and text the agents wrote. Most of an agent's tokens go into reading the codebase, so
+a small, conventional one is cheaper to work on.
+
+## How it compares
+
+plan_driven sits next to spec-driven tools such as GitHub's Spec Kit and Kiro, which also start
+from a written spec before an agent writes code. As we understand them, those are
+language-agnostic and focus on producing the spec, the design and the task list for an agent to
+follow. plan_driven is narrower and goes further on the Rails side:
+
+- the plan is drafted from your Rails schema, models and routes, and Existing Data Structure is
+  checked against them;
+- the rules are Ruby code that blocks the next step (expand and contract, ticket size and
+  order, pull request scope, CI), rather than guidance in a prompt;
+- phases and approvals are stored in your database, per revision, with an audit trail;
+- each acceptance criterion is mapped to a Cucumber scenario, and the delivery report shows
+  the proof, the approvals and the cost.
+
+If your stack isn't Rails, or you only want a spec for a single agent session, a general tool
+is the better fit.
 
 ## Keys
 

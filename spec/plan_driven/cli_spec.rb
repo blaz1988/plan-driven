@@ -24,6 +24,14 @@ RSpec.describe PlanDriven::CLI do
     expect(text).to include("approve-tickets PLAN", "Phases: plan draft")
   end
 
+  it "shows the tokens each step spent, and the cost when priced" do
+    PlanDriven.configuration.token_prices = { "model" => { input: 3, output: 15 } }
+    run("new", "Polymorphic", "form", "ownership", input: interview_input)
+    status, text = run("usage", "PD-1")
+    expect(status).to eq(0)
+    expect(text).to include("plan drafted", "1,200", "$0.01", "1,200 tokens, $0.01")
+  end
+
   it "rejects unknown commands" do
     expect(run("deploy")).to eq([1, "✗ Unknown command `deploy`. `plan-driven help` lists them.\n"])
   end

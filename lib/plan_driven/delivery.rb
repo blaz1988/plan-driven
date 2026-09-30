@@ -24,6 +24,7 @@ module PlanDriven
                           guard_report: result.report.to_h)
       plan.log!("plan.drafted", actor: actor, model: llm.label, attempts: result.attempts,
                                 assumptions: result.assumptions)
+      Usage.record_llm(plan, llm, "plan drafted", actor: actor)
       Renderer.write_plan(plan, config: config)
       [plan, result]
     end
@@ -43,6 +44,7 @@ module PlanDriven
     def redraft_section(plan, key, instruction)
       text = drafter.redraft(plan.sections, key, instruction)
       edit_section(plan, key, text)
+      Usage.record_llm(plan, llm, "#{key} redrafted", actor: actor)
       text
     end
 
@@ -76,7 +78,11 @@ module PlanDriven
 
     def draft_tickets(plan, instruction: nil)
       require_status!(plan, %w[approved ticketed])
-      result = TicketGenerator.new(llm: llm, schema: schema, config: config).generate(plan, instruction: instruction)
+      result = begin
+        TicketGenerator.new(llm: llm, schema: schema, config: config).generate(plan, instruction: instruction)
+      ensure
+        Usage.record_llm(plan, llm, instruction ? "tickets redrafted" : "tickets drafted", actor: actor)
+      end
       raise GuardError, result.report.errors unless result.report.ok?
 
       replace_tickets(plan, result)
@@ -190,6 +196,7 @@ module PlanDriven
                                               method: config.merge_method)
       ticket.update!(merged_sha: result["sha"])
       Workflow.ticket_transition!(ticket, "merged")
+      clean_up_agent(ticket)
       ticket.plan.log!("ticket.merged", actor: actor, ticket: ticket, sha: result["sha"])
       finish(ticket.plan)
       ticket
@@ -233,13 +240,14 @@ module PlanDriven
       run = agents.run(ticket.agent_id, ticket.agent_run_id)
       return unless run.terminal?
 
+      Usage.record_agent(ticket, run, agents, actor: actor, config: config)
       if run.finished? && run.pr_url
         ticket.update!(pr_url: run.pr_url, pr_number: GitHub.pr_number(run.pr_url), branch: run.branch)
         Workflow.ticket_transition!(ticket, "pr_open")
-        ticket.plan.log!("ticket.pr_opened", actor: "cursor-agent", ticket: ticket, pr: run.pr_url)
+        ticket.plan.log!("ticket.pr_opened", actor: agent_actor, ticket: ticket, pr: run.pr_url)
       else
         Workflow.ticket_transition!(ticket, "failed")
-        ticket.plan.log!("ticket.agent_failed", actor: "cursor-agent", ticket: ticket, status: run.status,
+        ticket.plan.log!("ticket.agent_failed", actor: agent_actor, ticket: ticket, status: run.status,
                                                 result: run.result.to_s[0, 500])
       end
     end
@@ -250,6 +258,7 @@ module PlanDriven
 
       ticket.update!(merged_sha: pull["merge_commit_sha"])
       Workflow.ticket_transition!(ticket, "merged")
+      clean_up_agent(ticket)
       ticket.plan.log!("ticket.merged", actor: pull.dig("merged_by", "login") || "github", ticket: ticket,
                                         sha: pull["merge_commit_sha"], outside_plan_driven: true)
     end
@@ -260,6 +269,14 @@ module PlanDriven
 
       Workflow.plan_transition!(plan, "delivered")
       plan.log!("plan.delivered", actor: actor)
+    end
+
+    def clean_up_agent(ticket)
+      agents.cleanup(ticket.agent_id) if ticket.agent_id && agents.respond_to?(:cleanup)
+    end
+
+    def agent_actor
+      "#{config.agent_provider}-agent"
     end
 
     def feature_files(files, sha)
@@ -344,7 +361,8 @@ module PlanDriven
     end
 
     def llm
-      @llm ||= LLM.new(config)
+      @llm = MeteredLLM.new(@llm || LLM.new(config)) unless @llm.is_a?(MeteredLLM)
+      @llm
     end
 
     def schema
@@ -356,7 +374,7 @@ module PlanDriven
     end
 
     def agents
-      @agents ||= CursorAgents.new(config: config)
+      @agents ||= Agents.build(config)
     end
   end
 end

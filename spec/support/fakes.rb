@@ -12,7 +12,8 @@ class FakeLLM
   def chat(system:, messages:, **)
     @calls << { system: system, messages: messages.map(&:dup) }
     reply = @replies.shift or raise "FakeLLM ran out of replies"
-    PlanDriven::LLM::Reply.new(text: reply.is_a?(String) ? reply : JSON.generate(reply))
+    PlanDriven::LLM::Reply.new(text: reply.is_a?(String) ? reply : JSON.generate(reply), input_tokens: 1000,
+                               output_tokens: 200)
   end
 
   def label
@@ -74,10 +75,14 @@ class FakeAgents
     PlanDriven::CursorAgents::Run.new(id: "run-f#{@follow_ups.size}", agent_id: agent_id, status: "CREATING")
   end
 
+  def usage(_agent_id, _run_id)
+    { "input_tokens" => 40, "output_tokens" => 12_000, "cache_write_tokens" => 30_000, "cache_read_tokens" => 700_000 }
+  end
+
   def finish(ticket, pr: 100)
     @runs[[ticket.agent_id, ticket.agent_run_id]] =
       PlanDriven::CursorAgents::Run.new(id: ticket.agent_run_id, agent_id: ticket.agent_id, status: "FINISHED",
-                                        branch: "cursor/#{ticket.key.downcase}",
+                                        branch: "cursor/#{ticket.key.downcase}", duration_ms: 540_000,
                                         pr_url: "https://github.com/acme/app/pull/#{pr}")
   end
 end
@@ -99,6 +104,13 @@ class FakeGitHub
   end
 
   def repo_url = "https://github.com/acme/app"
+
+  def create_pull(title:, head:, base:, body:)
+    number = 200 + @pulls.size
+    @pulls[number] = { "number" => number, "title" => title, "body" => body, "head" => { "ref" => head },
+                       "base" => { "ref" => base } }
+    { "number" => number, "html_url" => "https://github.com/acme/app/pull/#{number}" }
+  end
 
   def create_issue(title:, body:, labels:)
     @issues << { title: title, body: body, labels: labels }

@@ -14,10 +14,16 @@ if defined?(PlanDriven.configure)
     # config.plan_approvals = %w[review qa devops director]
     # config.ticket_approvals = %w[review]
 
-    # Cursor cloud agents: one agent and one pull request per ticket.
+    # Coding agents: one agent and one pull request per ticket. Cursor cloud agents by default,
+    # or a local CLI in its own git worktree per ticket.
     # config.agent_model = "composer-2.5"
+    # config.agent_provider = :local
+    # config.agent_command = "claude -p --permission-mode acceptEdits --output-format json"
     # config.base_branch = "main"
     # config.max_parallel_agents = 3
+
+    # Dollars per million tokens, for the cost in `plan-driven usage` and the delivery report.
+    # config.token_prices = { "your-model-id" => { input: 3.0, output: 15.0, cache_read: 0.3 } }
 
     # GitHub. The repository is read from `git remote get-url origin` when not set.
     # config.github_repository = "your-org/your-app"

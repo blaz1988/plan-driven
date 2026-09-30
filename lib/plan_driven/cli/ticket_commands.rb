@@ -23,7 +23,7 @@ module PlanDriven
         plan.tickets.select(&:issue_number).each do |ticket|
           ui.muted "  #{ticket.key} -> issue ##{ticket.issue_number}"
         end
-        ui.say "Next: `plan-driven develop #{plan.key}` hands the ready tickets to Cursor agents."
+        ui.say "Next: `plan-driven develop #{plan.key}` hands the ready tickets to the coding agents."
       end
 
       def cmd_prompt(reference = nil)
@@ -36,7 +36,9 @@ module PlanDriven
         return explain_waiting(plan) if starting.empty?
 
         starting.each { |ticket| ui.say "  #{ticket.key} #{ticket.title}" }
-        return ui.muted("Nothing started.") unless ui.confirm?("Start #{starting.size} Cursor cloud agent(s)?")
+        unless ui.confirm?("Start #{starting.size} #{PlanDriven.configuration.agent_provider} agent(s)?")
+          return ui.muted("Nothing started.")
+        end
 
         delivery.develop(plan, only: starting.map(&:key)).each do |ticket|
           ui.success "#{ticket.key} agent started: #{ticket.agent_url}"
@@ -121,6 +123,24 @@ module PlanDriven
         end)
         ui.say
         run.passed? ? ui.success(Evidence.summary_line(plan)) : ui.warn("#{run.status}: #{Evidence.summary_line(plan)}")
+      end
+
+      def cmd_usage(reference = nil)
+        plan = find_plan(reference)
+        rows = Usage.rows(plan)
+        return ui.muted("No token usage recorded for #{plan.key} yet.") if rows.empty?
+
+        ui.table(%w[Step Ticket Model Tokens Time Cost], rows.map do |row|
+          [row.step.to_s, row.ticket.to_s, row.model.to_s, Usage.format_tokens(row.total_tokens),
+           row.duration_ms ? "#{(row.duration_ms / 60_000.0).round(1)} min" : "", Usage.format_cost(row.cost)]
+        end)
+        totals = Usage.totals(rows)
+        ui.say
+        ui.success "#{Usage.format_tokens(totals[:total_tokens])} tokens" \
+                   "#{", #{Usage.format_cost(totals[:cost])}" if totals[:cost]}"
+        return if totals[:unpriced].empty?
+
+        ui.muted "No price for #{totals[:unpriced].join(", ")}; set config.token_prices to see dollars."
       end
 
       def cmd_report(reference = nil)

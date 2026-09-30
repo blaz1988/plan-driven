@@ -83,6 +83,7 @@ module PlanDriven
       end
 
       def check_cursor
+        return check_local_agents if PlanDriven.configuration.agent_provider.to_sym == :local
         return unless Credentials.fetch(:cursor_api_key)
 
         agents = CursorAgents.new
@@ -91,6 +92,15 @@ module PlanDriven
         check_agent_model(agents)
       rescue Error => e
         ui.error "Cursor API: #{e.message}"
+      end
+
+      def check_local_agents
+        command = PlanDriven.configuration.agent_command.to_s
+        return ui.error("Agents: local, but config.agent_command isn't set") if command.empty?
+
+        program = Shellwords.split(command).first
+        found = ENV["PATH"].to_s.split(File::PATH_SEPARATOR).any? { |dir| File.executable?(File.join(dir, program)) }
+        found ? ui.success("Agents: local, #{command}") : ui.error("Agents: #{program} isn't on the PATH")
       end
     end
   end

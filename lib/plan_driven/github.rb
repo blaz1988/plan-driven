@@ -33,6 +33,10 @@ module PlanDriven
       request(:post, "/repos/#{repository}/issues/#{number}/comments", { body: body })
     end
 
+    def create_pull(title:, head:, base:, body:)
+      request(:post, "/repos/#{repository}/pulls", { title: title, head: head, base: base, body: body })
+    end
+
     def pull(number)
       request(:get, "/repos/#{repository}/pulls/#{number}")
     end

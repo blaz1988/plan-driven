@@ -32,6 +32,43 @@ RSpec.describe PlanDriven::Guards::MigrationGuard do
     end
   end
 
+  it "rejects a one-step rename even when the plan also has expand and contract steps" do
+    text = "### Step 1: Expand\n\nCreate table `categories`.\n\n### Step 2: Switch reads\n\n" \
+           "Rename column `name` to `title` on `forms`.\n\n### Step 3: Contract\n\nNothing to remove."
+    expect(check(text).errors.first).to match(/in one step \("Rename column `name` to `title` on `forms`/)
+  end
+
+  it "rejects a removal in migration code under an expand step" do
+    text = "### Step 1: Expand\n\n```ruby\ndef change\n  remove_column :events, :category\nend\n```"
+    expect(check(text).errors.first).to match(/in one step/)
+  end
+
+  it "accepts a removal in migration code under a contract step" do
+    text = "### Step 1: Expand\n\nAdd `category_id` to `events`.\n\n### Step 4: Contract (later deploy)\n\n" \
+           "```ruby\n# Remove the old column\nremove_column :events, :category\n```"
+    expect(check(text).errors).to eq([])
+  end
+
+  it "reads headings and negated sentences as context, not changes" do
+    text = "### Removed or renamed columns\n\nNone. No column is removed or renamed, so `ignored_columns` " \
+           "isn't needed. There is no `events.category` string column."
+    expect(check(text).errors).to eq([])
+  end
+
+  it "accepts dropping a table the plan creates, and rollback notes" do
+    text = "New table: `rsvps`.\n\n`drop_table :rsvps` is reversible.\n\n### Rollback\n\nremove_column :forms, :x"
+    expect(check(text).errors).to eq([])
+  end
+
+  it "doesn't let a new table excuse a change to an existing one" do
+    text = "New table: `rsvps`.\n\nRename column `name` to `title` on `forms`, next to rsvps."
+    expect(check(text).errors.first).to match(/in one step/)
+  end
+
+  it "still rejects a removal followed by an unrelated negation" do
+    expect(check("Drop the legacy_name column; no code reads it.").errors.first).to match(/in one step/)
+  end
+
   it "passes additive changes" do
     expect(check("Add formable_type (string, nullable) to forms.").errors).to eq([])
   end

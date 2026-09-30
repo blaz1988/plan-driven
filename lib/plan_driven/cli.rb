@@ -29,7 +29,7 @@ module PlanDriven
       "tickets" => ["PLAN [\"instruction\"]", "Draft tickets from the approved plan, or redraft them"],
       "approve-tickets" => ["PLAN", "Approve the tickets (--as ROLE); creates GitHub issues"],
       "prompt" => ["PLAN/TICKET", "Show what the agent will be told"],
-      "develop" => ["PLAN [TICKET...]", "Hand ready tickets to Cursor cloud agents"],
+      "develop" => ["PLAN [TICKET...]", "Hand ready tickets to the coding agents (Cursor cloud, or local)"],
       "status" => ["PLAN", "Poll agents and pull requests, then show every ticket"],
       "review" => ["PLAN/TICKET", "Run the pull request guards"],
       "approve-pr" => ["PLAN/TICKET", "Approve the pull request (guards must pass)"],
@@ -38,6 +38,7 @@ module PlanDriven
       "evidence" => ["PLAN", "Run the plan's Cucumber scenarios and record the results (--from FILE)"],
       "report" => ["PLAN", "Write the delivery report"],
       "log" => ["PLAN", "The audit trail"],
+      "usage" => ["PLAN", "Tokens and cost per step and per agent run"],
       "configure" => ["", "Store API keys in ~/.plan_driven/config"],
       "doctor" => ["", "Check keys, repository and connections"]
     }.freeze

@@ -23,6 +23,7 @@ module PlanDriven
         parts << "## Tickets and pull requests\n\n#{delivery_table(plan)}"
         parts << "## Acceptance criteria and proof\n\n#{Evidence.matrix_markdown(plan)}"
         parts << "## Checks run on each pull request\n\n#{guard_findings(plan)}"
+        parts << "## Tokens and cost\n\n#{usage_table(plan)}"
         parts << "## Approvals\n\n#{approval_history(plan)}"
         parts << "## Timeline\n\n#{timeline(plan)}"
         parts << "## The approved plan\n\nThe plan this delivery implements is in `plan.md`, revision #{plan.revision}."
@@ -116,8 +117,32 @@ module PlanDriven
         table(%w[When Subject Role Decision By Note], rows)
       end
 
+      def usage_table(plan)
+        rows = Usage.rows(plan)
+        return "No token usage recorded." if rows.empty?
+
+        "#{table(%w[Step Ticket Model Input Output Cache Time Cost], rows.map { |row| usage_row(row) })}\n\n" \
+          "#{usage_total(Usage.totals(rows))}"
+      end
+
+      def usage_row(row)
+        tokens = row.tokens.transform_values { |count| Usage.format_tokens(count) }
+        cache = Usage.format_tokens(row.tokens["cache_write_tokens"] + row.tokens["cache_read_tokens"])
+        time = row.duration_ms ? "#{(row.duration_ms / 60_000.0).round(1)} min" : "-"
+        [row.step.to_s, row.ticket || "-", row.model.to_s, tokens["input_tokens"], tokens["output_tokens"], cache, time,
+         Usage.format_cost(row.cost)]
+      end
+
+      def usage_total(totals)
+        tokens = Usage.format_tokens(totals[:total_tokens])
+        return "**Total: #{tokens} tokens, #{Usage.format_cost(totals[:cost])}**" if totals[:cost]
+
+        "**Total: #{tokens} tokens.** No price is set for #{totals[:unpriced].join(", ")}; " \
+          "add it to `config.token_prices` to see dollars."
+      end
+
       def timeline(plan)
-        plan.events.map do |event|
+        plan.events.where.not(name: %w[llm.usage agent.usage]).map do |event|
           target = event.ticket ? " #{event.ticket.key}" : ""
           "- #{event.created_at.strftime("%-d %b %Y %H:%M")} · #{event.name}#{target} · #{event.actor}"
         end.join("\n")

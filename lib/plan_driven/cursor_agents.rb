@@ -10,7 +10,7 @@ module PlanDriven
     BASE = "https://api.cursor.com/v1"
     TERMINAL = %w[FINISHED ERROR CANCELLED EXPIRED].freeze
 
-    Run = Struct.new(:id, :agent_id, :status, :result, :branch, :pr_url, keyword_init: true) do
+    Run = Struct.new(:id, :agent_id, :status, :result, :branch, :pr_url, :duration_ms, keyword_init: true) do
       def terminal?
         TERMINAL.include?(status)
       end
@@ -48,6 +48,14 @@ module PlanDriven
       to_run(request(:post, "/agents/#{agent_id}/runs", { prompt: { text: text } }).fetch("run"))
     end
 
+    # Tokens one run spent, in Usage's field names.
+    def usage(agent_id, run_id)
+      data = request(:get, "/agents/#{agent_id}/usage?runId=#{run_id}")
+      tokens = Array(data["runs"]).first.to_h["usage"] || data["totalUsage"] || {}
+      { "input_tokens" => tokens["inputTokens"].to_i, "output_tokens" => tokens["outputTokens"].to_i,
+        "cache_write_tokens" => tokens["cacheWriteTokens"].to_i, "cache_read_tokens" => tokens["cacheReadTokens"].to_i }
+    end
+
     def me
       request(:get, "/me")
     end
@@ -62,7 +70,7 @@ module PlanDriven
     def to_run(data)
       branch = Array(data.dig("git", "branches")).first || {}
       Run.new(id: data["id"], agent_id: data["agentId"], status: data["status"], result: data["result"],
-              branch: branch["branch"], pr_url: branch["prUrl"])
+              branch: branch["branch"], pr_url: branch["prUrl"], duration_ms: data["durationMs"])
     end
 
     def request(method, path, body = nil)

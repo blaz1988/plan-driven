@@ -26,8 +26,13 @@ module PlanDriven
     # Where documentation is written, relative to the application root.
     attr_accessor :docs_path, :root
 
-    # Cursor cloud agents.
-    attr_accessor :agent_model, :base_branch, :max_parallel_agents, :skip_reviewer_request
+    # Coding agents: :cursor (Cursor cloud agents), or :local to run a command such as Claude Code
+    # or Codex on this machine, one git worktree per ticket (see LocalAgents).
+    attr_accessor :agent_provider, :agent_command, :agent_model, :base_branch, :max_parallel_agents,
+                  :skip_reviewer_request, :agent_timeout
+
+    # Dollars per million tokens, by model id, for the cost in the delivery report (see Usage).
+    attr_accessor :token_prices
 
     # GitHub.
     attr_accessor :github_repository, :sync_issues, :merge_method, :issue_labels
@@ -68,10 +73,14 @@ module PlanDriven
       @docs_path = "docs/plans"
       @root = nil
 
+      @agent_provider = :cursor
+      @agent_command = nil
       @agent_model = nil
       @base_branch = "main"
       @max_parallel_agents = 3
       @skip_reviewer_request = false
+      @agent_timeout = 3600
+      @token_prices = {}
 
       @github_repository = nil
       @sync_issues = true

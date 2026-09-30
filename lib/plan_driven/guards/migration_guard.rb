@@ -6,7 +6,12 @@ module PlanDriven
     class MigrationGuard
       DESTRUCTIVE = /\b(remove|drop|delete|rename)\w*\b[^.\n]{0,80}\b(column|table|field)s?\b|
                      \b(remove_column|drop_table|rename_column|rename_table|change_column)\b/ix
-      SAFE_REMOVAL = /ignored_columns|expand|contract|in a later (step|phase|release)|after (the )?backfill/i
+      # A removal is staged when its own sentence says so, or when it sits under a contract step.
+      SAFE_REMOVAL = Regexp.union(/ignored_columns|\bcontract\b/i, /in a later (step|phase|release|migration|deploy)/i,
+                                  /after (the )?(backfill|deploy)|once (reads|the code|no code)/i)
+      LATER_STEP = /\b(contract|clean[\s-]?up|later (step|phase|release|migration|deploy)|follow[\s-]?up)\b/i
+      ROLLBACK = /\b(roll[\s-]?back|down migration|undo)\b/i
+      NEGATED = /\b(no|not|never|none|nothing|don't|doesn't|won't|without|isn't|aren't)\b/i
       NOT_NULL = /\bnot[\s_-]?null\b|null:\s*false/i
       NOT_NULL_SAFE = /default|backfill|nullable first|after (the )?backfill|validate/i
       INDEX = /\badd_index\b|\bindex(es)?\b/i
@@ -42,11 +47,52 @@ module PlanDriven
       private
 
       def check_destructive(report)
-        return unless @text.match?(DESTRUCTIVE)
-        return if @text.match?(SAFE_REMOVAL)
+        created = new_tables
+        unsafe = destructive_statements.reject do |statement, heading|
+          statement.match?(SAFE_REMOVAL) || statement.match?(ROLLBACK) ||
+            heading.to_s.match?(LATER_STEP) || heading.to_s.match?(ROLLBACK) ||
+            only_new_tables?(statement, created)
+        end
+        return if unsafe.empty?
 
-        report.error("Database changes remove or rename a column or table in one step. Split it: stop using " \
-                     "it and add it to `ignored_columns`, deploy, then remove it in a later migration.")
+        report.error("Database changes remove or rename a column or table in one step " \
+                     "(\"#{unsafe.first.first.strip[0, 90]}\"). Split it: stop using it and add it to " \
+                     "`ignored_columns`, deploy, then remove it in a later contract step.")
+      end
+
+      # [sentence or code line, the heading it's under] for every change that removes or renames.
+      # Headings are only context ("### Removed or renamed columns"), and a negated sentence
+      # ("No column is removed") changes nothing.
+      def destructive_statements
+        heading = nil
+        fenced = false
+        @text.each_line.with_object([]) do |line, found|
+          if line.start_with?("```")
+            fenced = !fenced
+          elsif !fenced && line.match?(/\A\#{1,6}\s/)
+            heading = line
+          else
+            statements = fenced ? [line] : line.split(/(?<=[.!?])\s+/)
+            statements.each do |statement|
+              next unless statement.match?(DESTRUCTIVE)
+              next if !fenced && negated?(statement)
+
+              found << [statement, heading]
+            end
+          end
+        end
+      end
+
+      # Dropping or changing a table this plan creates touches nothing that runs today.
+      def only_new_tables?(statement, created)
+        named = statement.scan(/[:`"']([a-z][a-z0-9_]*)\b/).flatten & @schema.tables
+        created.any? && named.empty? && created.any? { |table| statement.match?(/\b#{Regexp.escape(table)}\b/) }
+      end
+
+      # Only a negation before the change counts: "No column is removed", not "Drop it; no code reads it".
+      def negated?(statement)
+        change = statement =~ /\b(remove|drop|delete|rename|change_column)/i
+        change && statement[0, change].match?(NEGATED)
       end
 
       def check_not_null(report)
