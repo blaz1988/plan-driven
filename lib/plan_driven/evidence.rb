@@ -21,6 +21,9 @@ module PlanDriven
     # when plan-driven itself was started from a development server (the wizard).
     CUCUMBER_ENV = { "RAILS_ENV" => "test", "RACK_ENV" => "test" }.freeze
 
+    # Shown before each result in the Markdown report, so it reads at a glance on GitHub too.
+    MARKS = { "passed" => "✅", "failed" => "❌", "not run" => "⏸️", "no scenario" => "⚠️" }.freeze
+
     module_function
 
     def tag_expression(plan)
@@ -76,8 +79,8 @@ module PlanDriven
       "not run"
     end
 
-    def matrix(plan)
-      scenarios = plan.evidence_runs.last&.scenarios || []
+    def matrix(plan, run = plan.evidence_runs.last)
+      scenarios = run&.scenarios || []
       plan.tickets.flat_map do |ticket|
         ticket.criteria.each_with_index.map do |criterion, index|
           matching = scenarios.select do |scenario|
@@ -94,7 +97,7 @@ module PlanDriven
 
       rows = matrix(plan).map do |row|
         scenario = row.scenarios.map { |s| "#{s["name"]} (`#{s["file"]}`)" }.join("; ").presence || "-"
-        ["#{row.ticket.key}.#{row.number}", row.criterion, scenario, row.status]
+        ["#{row.ticket.key}.#{row.number}", row.criterion, scenario, "#{MARKS[row.status]} #{row.status}"]
       end
       commit = run.commit_sha.present? ? " on commit `#{run.commit_sha[0, 7]}`" : ""
       intro = "Cucumber, run #{run.created_at.strftime("%-d %b %Y %H:%M")}#{commit}: `#{run.command}`"

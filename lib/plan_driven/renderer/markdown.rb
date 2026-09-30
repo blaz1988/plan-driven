@@ -17,10 +17,12 @@ module PlanDriven
         "#{parts.join("\n\n")}\n"
       end
 
-      def report(plan)
+      # `charts` are the SVG files written next to the report, by name.
+      def report(plan, charts: [])
         parts = ["# #{plan.key}: #{plan.title} (delivery report)", meta(plan)]
-        parts << "## Summary\n\n#{summary(plan)}"
+        parts << "## Summary\n\n#{summary(plan)}#{chart(charts, "statistics-proof.svg", "Acceptance criteria proven")}"
         parts << "## Tickets and pull requests\n\n#{delivery_table(plan)}"
+        parts << "## Statistics\n\n#{statistics(plan, charts)}"
         parts << "## Acceptance criteria and proof\n\n#{Evidence.matrix_markdown(plan)}"
         parts << "## Checks run on each pull request\n\n#{guard_findings(plan)}"
         parts << "## Tokens and cost\n\n#{usage_table(plan)}"
@@ -87,6 +89,43 @@ module PlanDriven
            ticket.merged_sha.to_s[0, 7].presence || "-", ticket.pr_approved_by || "-"]
         end
         table(["#", "Ticket", "Status", "Pull request", "Merge commit", "Approved by"], rows)
+      end
+
+      def statistics(plan, charts)
+        stats = Statistics.new(plan)
+        return "Statistics start when the tickets are approved." unless stats.started?
+
+        figures = [["statistics-burnup.svg", "Acceptance criteria merged and proven"],
+                   ["statistics-timeline.svg", "Where the time went, ticket by ticket"],
+                   ["statistics-time.svg", "Agents and people"]].map { |name, alt| chart(charts, name, alt) }.join
+        "#{table(%w[Measure Value], statistics_rows(stats))}#{figures}\n\n#{ticket_times(stats)}"
+      end
+
+      def statistics_rows(stats)
+        s = stats.summary
+        duration = ->(seconds) { Statistics.duration(seconds) }
+        rows = stats.phases.filter_map { |label, seconds| ["#{label} time", duration[seconds]] if seconds }
+        rows << ["Idea to delivery", duration[s[:lead_time]]]
+        rows << ["Pull requests approved the first time", "#{s[:first_time]} of #{s[:merged]}"]
+        rows << ["Review rounds (feedback sent to an agent)", s[:review_rounds].to_s]
+        rows << ["Agents' share of the time tickets were worked on", "#{s[:agent_share]}%"] if s[:agent_share]
+        rows << ["Estimated points", s[:points].to_s]
+        rows
+      end
+
+      def ticket_times(stats)
+        duration = ->(seconds) { seconds.positive? ? Statistics.duration(seconds) : "-" }
+        rows = stats.tickets.map do |row|
+          [row.ticket.key, row.ticket.estimate.to_s, duration[row.seconds("queued")], duration[row.seconds("agent")],
+           duration[row.seconds("review")], duration[row.seconds("fixes")], duration[row.seconds("merge")],
+           row.review_rounds.to_s, row.merged? ? Statistics.duration(row.cycle_time) : "open"]
+        end
+        table(["#", "Estimate", "Queued", "Agent coding", "Waiting for review", "Fixing feedback",
+               "Approved, not merged", "Review rounds", "Start to merge"], rows)
+      end
+
+      def chart(charts, name, alt)
+        charts.include?(name) ? "\n\n![#{alt}](#{name})" : ""
       end
 
       def guard_findings(plan)

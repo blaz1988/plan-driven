@@ -17,23 +17,30 @@ module PlanDriven
       write(plan, "plan", Markdown.plan(plan, config: config), title: "#{plan.key} #{plan.title}", config: config)
     end
 
+    # The charts are SVG files beside the report, so GitHub shows them in the Markdown; the HTML
+    # and the PDF carry them inline.
     def write_report(plan, config: PlanDriven.configuration)
-      write(plan, "delivery-report", Markdown.report(plan),
-            title: "#{plan.key} delivery report", config: config)
+      charts = Charts.report(plan)
+      dir = directory(plan, config: config)
+      FileUtils.mkdir_p(dir)
+      Dir[dir.join("statistics-*.svg")].each { |file| File.delete(file) }
+      charts.each { |name, svg| File.write(dir.join(name), svg) }
+      write(plan, "delivery-report", Markdown.report(plan, charts: charts.keys),
+            title: "#{plan.key} delivery report", config: config, images: charts)
     end
 
     def directory(plan, config: PlanDriven.configuration)
       config.docs_root.join(plan.slug)
     end
 
-    def write(plan, name, markdown, title:, config:)
+    def write(plan, name, markdown, title:, config:, images: {})
       dir = directory(plan, config: config)
       FileUtils.mkdir_p(dir)
       md = dir.join("#{name}.md")
       html = dir.join("#{name}.html")
       pdf = dir.join("#{name}.pdf")
       File.write(md, markdown)
-      File.write(html, HTML.document(markdown, title: title))
+      File.write(html, HTML.document(markdown, title: title, images: images))
       written = PDF.render(html, pdf, config: config)
       { markdown: md, html: html, pdf: written ? pdf : nil }
     end

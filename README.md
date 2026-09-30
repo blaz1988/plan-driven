@@ -115,6 +115,7 @@ repository. The planner and the five agents ran on Claude Opus 5.5 through Curso
 - [Configuration](#configuration)
 - [Choosing the coding agents](#choosing-the-coding-agents)
 - [Tokens and cost](#tokens-and-cost)
+- [Statistics](#statistics)
 - [How it compares](#how-it-compares)
 - [Keys](#keys)
 - [Working as a team](#working-as-a-team)
@@ -717,8 +718,9 @@ $ bin/plan-driven report PD-1
 
 `evidence` runs the plan's scenarios on your machine and stores the result with the commit it
 ran on; `--from cucumber.json` imports a run from CI instead. The delivery report lists each
-ticket with its pull request, merge commit and approver, then every acceptance criterion with
-the scenario that proves it, the guard findings, every approval and the full timeline. Commit
+ticket with its pull request, merge commit and approver, the [statistics](#statistics) with
+their charts, then every acceptance criterion with the scenario that proves it, marked passed
+or failed in colour, the guard findings, every approval and the full timeline. Commit
 `docs/plans/` with it, and the plan and its proof stay next to the code.
 
 ![The delivery report](docs/images/15-delivery-report.png)
@@ -840,6 +842,7 @@ key such as `PD-1`, and `PLAN/TICKET` is a ticket such as `PD-1/T3`.
 | `report PLAN` | Write the delivery report |
 | `log PLAN` | The audit trail |
 | `usage PLAN` | Tokens, time and cost per step and per agent run |
+| `stats PLAN` | Where the time went: phases, agents and people, each ticket |
 | `questions` | The interview's questions, and which ones the team changed or added |
 | `question KEY [--title T] [--ask Q] [--group G] [--required \| --optional] [--remove]` | Change or add an interview question, or put it back |
 | `configure` | Store keys in `~/.plan_driven/config` |
@@ -984,6 +987,24 @@ For scale, these are the five cloud agents from the demo, read back from Cursor'
 94% of the tokens are cache reads, which cost a fraction of fresh input, and only 75 thousand
 are code and text the agents wrote. Most of an agent's tokens go into reading the codebase, so
 a small, conventional one is cheaper to work on.
+
+## Statistics
+
+`plan-driven stats PD-1`, the Statistics page in the wizard and the delivery report show where
+a plan's time went:
+
+- the phases: planning, tickets, development and proof;
+- each ticket's time, split into queued, agent coding, waiting for review, agent fixing
+  feedback, and approved but not merged;
+- the agents' share of the time tickets were worked on, and how many pull requests were
+  approved the first time;
+- acceptance criteria merged and proven by a passing test over time, against the plan's scope.
+
+Nothing is estimated: every number is the time between two events in the audit trail. The
+charts are SVG drawn in Ruby. The delivery report writes them next to `delivery-report.md`, so
+GitHub shows them, and carries them inline in the HTML and the PDF.
+
+![The Statistics page in the wizard](docs/images/statistics.png)
 
 ## How it compares
 

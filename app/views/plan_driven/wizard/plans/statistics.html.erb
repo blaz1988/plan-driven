@@ -1,0 +1,94 @@
+<% content_for :title, "#{@plan.key} statistics" %>
+<% duration = ->(seconds) { PlanDriven::Statistics.duration(seconds) } %>
+<p class="muted" style="margin:0"><%= link_to "← #{@plan.key} #{@plan.title}", plan_path(@plan.key) %></p>
+<h1>Statistics</h1>
+<p class="muted" style="margin:0">
+  <span class="pill <%= @plan.status == "delivered" ? "good" : "wait" %>"><%= @plan.status.tr("_", " ") %></span>
+  Computed from the audit trail: every number is a recorded event, nothing is estimated.
+</p>
+
+<% if @stats.started? %>
+  <% s = @stats.summary %>
+  <div class="kpis">
+    <div class="kpi">
+      <small>Idea to delivery</small>
+      <strong><%= duration[s[:lead_time]] %></strong>
+      <span class="muted"><%= @plan.status == "delivered" ? "plan drafted to delivered" : "so far" %></span>
+    </div>
+    <div class="kpi">
+      <small>Development</small>
+      <strong><%= duration[s[:development]] %></strong>
+      <span class="muted"><%= s[:merged] %> of <%= s[:tickets] %> tickets merged</span>
+    </div>
+    <div class="kpi <%= s[:proven] == s[:criteria] && s[:criteria].positive? ? "good" : (s[:evidence] ? "bad" : "") %>">
+      <small>Criteria proven</small>
+      <strong><%= s[:proven] %> <span>/ <%= s[:criteria] %></span></strong>
+      <span class="muted"><%= s[:evidence] ? "by a passing scenario" : "no evidence run yet" %></span>
+    </div>
+    <div class="kpi">
+      <small>Approved the first time</small>
+      <strong><%= s[:first_time] %> <span>/ <%= s[:merged] %></span></strong>
+      <span class="muted"><%= pluralize(s[:review_rounds], "review round") %></span>
+    </div>
+    <div class="kpi">
+      <small>Agents' share of the work</small>
+      <strong><%= s[:agent_share] ? "#{s[:agent_share]}%" : "-" %></strong>
+      <span class="muted">the rest is waiting on people</span>
+    </div>
+    <div class="kpi">
+      <small>Tokens</small>
+      <strong><%= PlanDriven::Usage.format_tokens(s[:tokens]) %></strong>
+      <span class="muted"><%= s[:cost] ? PlanDriven::Usage.format_cost(s[:cost]) : "set config.token_prices for dollars" %></span>
+    </div>
+  </div>
+
+  <% charts = PlanDriven::Charts.report(@plan, stats: @stats) %>
+  <% %w[statistics-proof.svg statistics-burnup.svg statistics-timeline.svg statistics-time.svg].each do |name| %>
+    <% next unless charts[name] %>
+    <div class="card chart"><%= charts[name].html_safe %></div>
+  <% end %>
+
+  <div class="card">
+    <h3 style="margin-top:0">Ticket by ticket</h3>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Ticket</th><th>Est.</th><th>Queued</th><th>Agent</th><th>Review</th><th>Fixes</th><th>Merge</th><th>Rounds</th><th>Start to merge</th></tr>
+      </thead>
+      <tbody>
+        <% @stats.tickets.each do |row| %>
+          <tr>
+            <td><b><%= row.ticket.key %></b></td>
+            <td><%= row.ticket.title %></td>
+            <td><%= row.ticket.estimate %></td>
+            <% %w[queued agent review fixes merge].each do |phase| %>
+              <td><span class="swatch" style="background:<%= PlanDriven::Charts::COLORS[phase] %>"></span><%= row.seconds(phase).positive? ? duration[row.seconds(phase)] : "-" %></td>
+            <% end %>
+            <td><%= row.review_rounds %></td>
+            <td><% if row.merged? %><span class="pill good"><%= duration[row.cycle_time] %></span><% else %><span class="pill wait"><%= row.ticket.status.tr("_", " ") %></span><% end %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% else %>
+  <div class="card">
+    <strong>Statistics start when the tickets are approved.</strong>
+    <p class="muted">Until then, this is how long planning has taken.</p>
+  </div>
+<% end %>
+
+<div class="card">
+  <h3 style="margin-top:0">Phases</h3>
+  <div class="phases">
+    <% @stats.phases.each do |label, seconds| %>
+      <div class="<%= "pending" unless seconds %>"><small><%= label %></small><b><%= seconds ? duration[seconds] : "not yet" %></b></div>
+    <% end %>
+  </div>
+</div>
+
+<div class="card row">
+  <span class="muted">The same numbers in the terminal, and the charts in the delivery report.</span>
+  <span style="margin-left:auto"></span>
+  <%= run_button "Print in the terminal", "stats" %>
+  <%= run_button "Write the delivery report", "report", {}, primary: true %>
+</div>

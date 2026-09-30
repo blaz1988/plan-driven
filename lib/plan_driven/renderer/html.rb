@@ -7,10 +7,14 @@ module PlanDriven
     # and doesn't need to be.
     module HTML
       STYLE = File.read(File.expand_path("style.css", __dir__))
+      IMAGE = /\A!\[([^\]]*)\]\(([^)\s]+)\)\z/
+      # A table cell that is only a result becomes a coloured pill, and colours its row.
+      RESULT = /\A(?:#{Evidence::MARKS.values.map { |mark| Regexp.escape(mark) }.join("|")})?\s*
+                (passed|failed|not\ run|no\ scenario|merged)\z/x
 
       module_function
 
-      def document(markdown, title:)
+      def document(markdown, title:, images: {})
         <<~HTML
           <!doctype html>
           <html lang="en">
@@ -21,19 +25,22 @@ module PlanDriven
           </head>
           <body>
           <main>
-          #{convert(markdown)}
+          #{convert(markdown, images: images)}
           </main>
           </body>
           </html>
         HTML
       end
 
-      def convert(markdown)
+      def convert(markdown, images: {})
         lines = markdown.to_s.lines.map(&:chomp)
         out = []
         until lines.empty?
           line = lines.first
-          if line.start_with?("```")
+          if (image = line.strip.match(IMAGE))
+            lines.shift
+            out << figure(image[1], image[2], images)
+          elsif line.start_with?("```")
             out << code_block(lines)
           elsif line.match?(/\A\s*\|/)
             out << table(take_while(lines) { |l| l.match?(/\A\s*\|/) })
@@ -72,8 +79,30 @@ module PlanDriven
         header, *body = cells
         body = body.reject { |row| row.all? { |cell| cell.match?(/\A:?-+:?\z/) } }
         head = header.map { |cell| "<th>#{inline(cell)}</th>" }.join
-        rows = body.map { |row| "<tr>#{row.map { |cell| "<td>#{inline(cell.gsub("\\|", "|"))}</td>" }.join}</tr>" }
+        rows = body.map { |row| table_row(row) }
         "<table><thead><tr>#{head}</tr></thead><tbody>#{rows.join}</tbody></table>"
+      end
+
+      def table_row(row)
+        results = row.filter_map { |cell| cell.match(RESULT)&.[](1) }
+        cells = row.map do |cell|
+          result = cell.match(RESULT)&.[](1)
+          content = if result
+                      %(<span class="result #{result.tr(" ",
+                                                        "-")}">#{result}</span>)
+                    else
+                      inline(cell.gsub("\\|", "|"))
+                    end
+          "<td>#{content}</td>"
+        end
+        klass = results.last ? %( class="#{results.last.tr(" ", "-")}") : ""
+        "<tr#{klass}>#{cells.join}</tr>"
+      end
+
+      # A chart written next to the document is inlined, so the HTML and PDF stand alone.
+      def figure(alt, src, images)
+        body = images[src] || %(<img src="#{CGI.escapeHTML(src)}" alt="#{CGI.escapeHTML(alt)}">)
+        %(<figure class="chart">#{body}</figure>)
       end
 
       def list(lines)

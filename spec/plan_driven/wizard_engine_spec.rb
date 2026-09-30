@@ -17,6 +17,7 @@ RSpec.describe "The wizard engine in a Rails app" do
                                                                "200 /plan_driven/plans/PD-1/tickets true",
                                                                "200 /plan_driven/plans/PD-1/agents true",
                                                                "200 /plan_driven/plans/PD-1/finish true",
+                                                               "200 /plan_driven/plans/PD-1/statistics true",
                                                                "404 /plan_driven/jobs/0000000000000000 true",
                                                                "403 remote"
                                                              ])

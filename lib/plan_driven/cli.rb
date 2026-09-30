@@ -41,6 +41,7 @@ module PlanDriven
       "report" => ["PLAN", "Write the delivery report"],
       "log" => ["PLAN", "The audit trail"],
       "usage" => ["PLAN", "Tokens and cost per step and per agent run"],
+      "stats" => ["PLAN", "Where the time went: phases, agents and people, each ticket"],
       "questions" => ["", "The interview's questions, with the team's changes"],
       "question" => ["KEY", "Change or add a question (--title, --ask, --group, --required, --optional, --remove)"],
       "configure" => ["", "Store API keys in ~/.plan_driven/config"],

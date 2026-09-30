@@ -4,6 +4,7 @@
 <p class="muted" style="margin:0">
   <span class="pill <%= @plan.status == "delivered" ? "good" : "wait" %>"><%= @plan.status.tr("_", " ") %></span>
   revision <%= @plan.revision %> · <%= PlanDriven::Workflow::PLAN_DESCRIPTIONS[@plan.status] %>
+  · <%= link_to "Statistics", plan_statistics_path(@plan.key) %>
 </p>
 
 <ol class="steps">

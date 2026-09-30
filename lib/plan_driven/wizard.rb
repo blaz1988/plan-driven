@@ -14,7 +14,7 @@ module PlanDriven
     # The commands the wizard may run, built from form fields. Nothing else reaches a shell:
     # arguments are passed as an array, never interpolated.
     module Commands
-      PLAN_ONLY = %w[check submit pdf status evidence report usage log].freeze
+      PLAN_ONLY = %w[check submit pdf status evidence report usage stats log].freeze
 
       BUILDERS = {
         "doctor" => ->(_p) { [] },

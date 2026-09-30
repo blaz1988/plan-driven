@@ -143,6 +143,26 @@ module PlanDriven
         ui.muted "No price for #{totals[:unpriced].join(", ")}; set config.token_prices to see dollars."
       end
 
+      def cmd_stats(reference = nil)
+        plan = find_plan(reference)
+        stats = Statistics.new(plan)
+        duration = ->(seconds) { Statistics.duration(seconds) }
+        ui.heading "#{plan.key} #{plan.title}: statistics"
+        stats.phases.each { |label, seconds| ui.say "  #{label.ljust(22)}#{seconds ? duration[seconds] : "not yet"}" }
+        return ui.muted("Ticket statistics start when the tickets are approved.") unless stats.started?
+
+        show_summary(stats.summary)
+        show_time_split(stats)
+        ui.say
+        ui.table(%w[# Est Queued Agent Review Fixes Merge Rounds Total], stats.tickets.map do |row|
+          [row.ticket.key, row.ticket.estimate.to_s,
+           *%w[queued agent review fixes merge].map do |phase|
+             row.seconds(phase).positive? ? duration[row.seconds(phase)] : "-"
+           end,
+           row.review_rounds.to_s, row.merged? ? duration[row.cycle_time] : row.ticket.status.tr("_", " ")]
+        end)
+      end
+
       def cmd_report(reference = nil)
         plan = find_plan(reference)
         paths = delivery.report(plan)
@@ -151,6 +171,27 @@ module PlanDriven
       end
 
       private
+
+      def show_summary(summary)
+        ui.say "  #{"Idea to delivery".ljust(22)}#{Statistics.duration(summary[:lead_time])}"
+        ui.say "  #{"Tickets merged".ljust(22)}#{summary[:merged]} of #{summary[:tickets]}, " \
+               "#{summary[:first_time]} approved the first time"
+        proven = "#{summary[:proven]} of #{summary[:criteria]} acceptance criteria proven"
+        summary[:proven] == summary[:criteria] ? ui.success(proven) : ui.warn(proven)
+      end
+
+      def show_time_split(stats)
+        work = stats.work_seconds
+        return if work.zero?
+
+        ui.say
+        ui.say "Where the time went while tickets were worked on (agents #{stats.agent_share}%):"
+        stats.totals.slice(*Statistics::WORK).each do |phase, seconds|
+          share = seconds * 100.0 / work
+          ui.say "  #{Statistics::PHASES[phase].ljust(22)}#{Statistics.duration(seconds).rjust(10)}  " \
+                 "#{"█" * (share / 4).ceil} #{share.round}%"
+        end
+      end
 
       def explain_waiting(plan)
         running = plan.tickets.count(&:active_agent?)

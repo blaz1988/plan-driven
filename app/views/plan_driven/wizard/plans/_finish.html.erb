@@ -15,6 +15,13 @@
   </div>
 <% end %>
 
+<div class="card row">
+  <strong>Statistics</strong>
+  <span class="muted">Where the time went, criteria merged and proven, agents and people.</span>
+  <span style="margin-left:auto"></span>
+  <%= link_to "Open the statistics →", plan_statistics_path(@plan.key), class: "button" %>
+</div>
+
 <% files = %w[delivery-report.html delivery-report.pdf].select { |name| PlanDriven::Renderer.directory(@plan).join(name).file? } %>
 <% if files.any? %>
   <div class="card">

@@ -20,9 +20,12 @@ Metrics/MethodLength:
   Max: 25
   Exclude:
     - "lib/plan_driven/configuration.rb"
+    - "lib/plan_driven/charts.rb"
+    - "lib/plan_driven/renderer/html.rb"
 
 # CLI commands read top to bottom as the conversation they print, and the Markdown and
-# Gherkin readers are line-by-line state machines. Splitting them would hide the flow.
+# Gherkin readers are line-by-line state machines. Splitting them would hide the flow. A chart
+# is one drawing: its coordinates read best in one place.
 Metrics/AbcSize:
   Max: 30
   Exclude:
@@ -30,6 +33,7 @@ Metrics/AbcSize:
     - "lib/plan_driven/renderer/html.rb"
     - "lib/plan_driven/gherkin.rb"
     - "lib/plan_driven/configuration.rb"
+    - "lib/plan_driven/charts.rb"
 
 Metrics/CyclomaticComplexity:
   Max: 12
@@ -81,6 +85,8 @@ Naming/MethodParameterName:
     - at
     - by
     - pr
+    - x
+    - y
 
 Naming/PredicateMethod:
   AllowedMethods:

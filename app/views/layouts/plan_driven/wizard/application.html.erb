@@ -64,6 +64,18 @@
     .grid2 { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 2fr); gap:12px; }
     label.check { display:inline-flex; gap:6px; align-items:center; font-weight:400; margin:0; }
     .card.unused { opacity:.75; }
+    .kpis { display:grid; grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); gap:10px; margin:16px 0 4px; }
+    .kpi { background:#fff; border:1px solid var(--line); border-top:3px solid #3b82f6; border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:2px; }
+    .kpi small { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+    .kpi strong { font-size:26px; line-height:1.15; } .kpi strong span { font-size:16px; color:var(--muted); font-weight:500; }
+    .kpi .muted { font-size:12px; }
+    .kpi.good { border-top-color:var(--ok); } .kpi.good strong { color:var(--ok); }
+    .kpi.bad { border-top-color:var(--bad); } .kpi.bad strong { color:var(--bad); }
+    .card.chart { padding:6px; } .card.chart svg { display:block; width:100%; height:auto; }
+    .swatch { display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:6px; vertical-align:middle; }
+    .phases { display:flex; gap:0; border-radius:8px; overflow:hidden; border:1px solid var(--line); }
+    .phases div { flex:1; padding:10px 12px; border-right:1px solid var(--line); display:flex; flex-direction:column; }
+    .phases div:last-child { border-right:0; } .phases small { color:var(--muted); } .phases .pending { background:#f9fafb; color:var(--muted); }
     .flash { padding:10px 14px; border-radius:8px; margin-bottom:12px; background:#fee2e2; color:var(--bad); }
   </style>
 </head>

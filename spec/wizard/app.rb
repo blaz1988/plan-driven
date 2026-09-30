@@ -36,6 +36,9 @@ plan = PlanDriven::Plan.create!(title: "Event categories", sections: { "what" =>
                                 guard_report: { "errors" => ["What is too short"], "passes" => ["Who is set"] })
 plan.tickets.create!(key: "T1", title: "Migration: Create categories", status: "pr_open", pr_url: "https://x/pr/1",
                      pr_number: 1, acceptance_criteria: ["categories exist"])
+plan.log!("tickets.approved", actor: "Ada")
+plan.log!("ticket.agent_started", actor: "Ada", ticket: plan.tickets.first)
+plan.log!("ticket.pr_opened", actor: "cursor-agent", ticket: plan.tickets.first)
 
 app = Rack::MockRequest.new(Rails.application)
 local = { "REMOTE_ADDR" => "127.0.0.1" }
@@ -48,7 +51,9 @@ checks = {
   "/plan_driven/plans/PD-1/approve" => ["review", "submit it on the Plan step"],
   "/plan_driven/plans/PD-1/tickets" => ["Migration: Create categories", "categories exist"],
   "/plan_driven/plans/PD-1/agents" => ["PR #1", "Approve PR"],
-  "/plan_driven/plans/PD-1/finish" => ["Write the delivery report"],
+  "/plan_driven/plans/PD-1/finish" => ["Write the delivery report", "Open the statistics"],
+  "/plan_driven/plans/PD-1/statistics" => ["Where the time went", "Ticket by ticket", "Print in the terminal",
+                                           "0 of 1 acceptance criteria proven"],
   "/plan_driven/jobs/0000000000000000" => ["no job"]
 }
 checks.each do |path, texts|

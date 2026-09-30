@@ -6,7 +6,7 @@ module PlanDriven
   module Wizard
     # Every form posts here, and every post becomes one `plan-driven` command. The pages only read.
     class PlansController < ApplicationController
-      before_action :find_plan, only: %i[show run file]
+      before_action :find_plan, only: %i[show statistics run file]
 
       def index
         @plans = Plan.order(id: :desc)
@@ -33,12 +33,16 @@ module PlanDriven
         @template = PlanDriven.configuration.template
       end
 
+      def statistics
+        @step = "statistics"
+        @stats = Statistics.new(@plan)
+      end
+
       def run
         job = start(Commands.argv(params[:do], command_fields))
-        redirect_to plan_path(@plan.key, params[:step].presence, job: job.id, open: params[:open].presence,
-                                                                 anchor: params[:open].presence)
+        redirect_to after_run(job)
       rescue ArgumentError => e
-        redirect_to plan_path(@plan.key, params[:step].presence), alert: e.message
+        redirect_to plan_path(@plan.key, params[:step].presence.presence_in(Steps.keys)), alert: e.message
       end
 
       def run_global
@@ -61,6 +65,13 @@ module PlanDriven
       end
 
       private
+
+      def after_run(job)
+        return plan_statistics_path(@plan.key, job: job.id) if params[:step] == "statistics"
+
+        plan_path(@plan.key, params[:step].presence, job: job.id, open: params[:open].presence,
+                                                     anchor: params[:open].presence)
+      end
 
       def find_plan
         @plan = Plan.find_by_reference!(params[:key])

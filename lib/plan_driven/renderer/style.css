@@ -20,3 +20,24 @@ th { background: #f6f8fa; font-weight: 600; }
 tr { break-inside: avoid; }
 a { color: #0969da; text-decoration: none; }
 h1, h2, h3 { break-after: avoid; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+h2 { color: #1f2330; border-left: 4px solid #cc342d; padding-left: 10px; }
+th { background: #f3f4f6; }
+.result { display: inline-block; padding: 1px 9px; border-radius: 10px; font-size: 8.5pt; font-weight: 600; white-space: nowrap; }
+.result::before { margin-right: 4px; }
+.result.passed, .result.merged { background: #dcfce7; color: #15803d; }
+.result.passed::before, .result.merged::before { content: "✓"; }
+.result.failed { background: #fee2e2; color: #b91c1c; }
+.result.failed::before { content: "✗"; }
+.result.not-run { background: #fef3c7; color: #b45309; }
+.result.not-run::before { content: "•"; }
+.result.no-scenario { background: #f3f4f6; color: #6b7280; }
+.result.no-scenario::before { content: "–"; }
+tr.passed td:first-child { border-left: 3px solid #16a34a; }
+tr.failed td { background: #fef2f2; }
+tr.failed td:first-child { border-left: 3px solid #dc2626; }
+tr.not-run td { background: #fffbeb; }
+tr.not-run td:first-child { border-left: 3px solid #f59e0b; }
+tr.no-scenario td:first-child { border-left: 3px solid #9ca3af; }
+figure.chart { margin: 12px 0 18px; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; break-inside: avoid; }
+figure.chart svg, figure.chart img { display: block; width: 100%; height: auto; }
