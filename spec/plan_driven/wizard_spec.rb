@@ -23,6 +23,16 @@ RSpec.describe PlanDriven::Wizard do
       expect(argv("doctor")).to eq(%w[doctor --yes])
     end
 
+    it "turns the interview form into the answers `new` reads, one per question" do
+      answers = { "what" => "Comments\r\n\r\non events", "why" => "Lost in chat", "where" => "Event page",
+                  "who" => "Team Gather", "when" => "", "out_of_scope" => "Replies" }
+      input = described_class.interview_input(PlanDriven.configuration.template, answers)
+
+      cli = PlanDriven::CLI.new(input: StringIO.new(input), output: StringIO.new, boot: false)
+      expect(cli.send(:interview)).to eq("what" => "Comments\non events", "why" => "Lost in chat", "where" => "Event page",
+                                         "who" => "Team Gather", "when" => "", "background" => "", "out_of_scope" => "Replies")
+    end
+
     it "refuses anything outside the list, and arguments that don't look right" do
       expect { argv("configure") }.to raise_error(ArgumentError, /can't run `configure`/)
       expect { argv("submit", plan: "PD-1; rm -rf /") }.to raise_error(ArgumentError, "not a plan key")

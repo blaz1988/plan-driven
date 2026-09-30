@@ -25,24 +25,24 @@
   <% next if sections.empty? %>
   <h2><%= group %></h2>
   <% sections.each do |section| %>
-    <details class="section" id="<%= section.key %>" <%= "open" if params[:anchor] == section.key %>>
+    <details class="section" id="<%= section.key %>" <%= "open" if params[:open] == section.key %>>
       <summary><%= section.title %>
         <% if @plan.section(section.key).strip.empty? %><span class="pill wait">empty</span><% end %></summary>
       <div>
         <div class="doc"><%= markdown(@plan.section(section.key)) %></div>
         <% if @plan.editable? %>
+          <% fields = { step: "plan", section: section.key, open: section.key } %>
           <h3>Edit the text</h3>
-          <%= form_with url: run_plan_path(@plan.key), method: :post do |f| %>
-            <%= hidden_field_tag :do, "edit" %><%= hidden_field_tag :step, "plan" %>
-            <%= hidden_field_tag :section, section.key %><%= hidden_field_tag :anchor, section.key %>
-            <%= text_area_tag :text, @plan.section(section.key), rows: 10 %>
+          <%= form_with url: run_plan_path(@plan.key), method: :post do %>
+            <% fields.merge(do: "edit").each do |name, value| %><%= hidden_field_tag name, value, id: nil %><% end %>
+            <%= text_area_tag :text, @plan.section(section.key), rows: 10, id: "text_#{section.key}" %>
             <p><button type="submit">Save <%= section.title %></button></p>
           <% end %>
           <h3>Or ask for a redraft</h3>
-          <%= form_with url: run_plan_path(@plan.key), method: :post, class: "row" do |f| %>
-            <%= hidden_field_tag :do, "redraft" %><%= hidden_field_tag :step, "plan" %>
-            <%= hidden_field_tag :section, section.key %><%= hidden_field_tag :anchor, section.key %>
-            <%= text_field_tag :instruction, nil, placeholder: "e.g. add a colour column to categories" %>
+          <%= form_with url: run_plan_path(@plan.key), method: :post, class: "row" do %>
+            <% fields.merge(do: "redraft").each do |name, value| %><%= hidden_field_tag name, value, id: nil %><% end %>
+            <%= text_field_tag :instruction, nil, id: "instruction_#{section.key}",
+                                                  placeholder: "e.g. add a colour column to categories" %>
             <button type="submit">Redraft</button>
           <% end %>
         <% end %>

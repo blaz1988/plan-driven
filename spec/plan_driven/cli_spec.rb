@@ -39,7 +39,7 @@ RSpec.describe PlanDriven::CLI do
   it "interviews, drafts and writes the plan" do
     status, text = run("new", "Polymorphic", "form", "ownership", input: interview_input)
     expect(status).to eq(0)
-    expect(text).to include("What: What are we building?", "PD-1 drafted (1 attempt)",
+    expect(text).to include("What: What are we building?", "  > Team Jarvis\n", "PD-1 drafted (1 attempt)",
                             "All checks passed", "docs/plans/pd-1-polymorphic-form-ownership/plan.md")
     expect(PlanDriven::Plan.last.section("who")).to eq("Team Jarvis")
   end

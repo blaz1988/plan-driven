@@ -22,8 +22,8 @@
           <td>
             <% if @plan.status == "in_review" && approval&.decision != "approved" %>
               <%= form_with url: run_plan_path(@plan.key), method: :post, class: "row" do %>
-                <%= hidden_field_tag :step, "approve" %><%= hidden_field_tag :role, role %>
-                <%= text_field_tag :note, nil, placeholder: "note (needed to send it back)" %>
+                <%= hidden_field_tag :step, "approve", id: nil %><%= hidden_field_tag :role, role, id: nil %>
+                <%= text_field_tag :note, nil, id: "note_#{role}", placeholder: "note (needed to send it back)" %>
                 <button type="submit" name="do" value="approve" class="primary">Approve</button>
                 <button type="submit" name="do" value="reject">Send back</button>
               <% end %>

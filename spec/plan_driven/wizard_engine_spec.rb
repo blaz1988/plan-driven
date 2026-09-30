@@ -8,7 +8,7 @@ RSpec.describe "The wizard engine in a Rails app" do
     output, status = Open3.capture2e({ "APP_ROOT" => @root.to_s }, RbConfig.ruby, script)
     expect(status).to be_success, output
 
-    expect(output.lines.map(&:chomp)).to eq([
+    expect(output.lines.map(&:chomp).grep(/\A\d{3} /)).to eq([
                                               "200 /plan_driven true",
                                               "200 /plan_driven/plans/new true",
                                               "200 /plan_driven/plans/PD-1 true",

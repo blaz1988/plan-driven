@@ -13,6 +13,7 @@ $LOAD_PATH.unshift File.expand_path("../../lib", __dir__)
 require "plan_driven"
 
 class WizardApp < Rails::Application
+  config.load_defaults Rails::VERSION::STRING.to_f
   config.root = ENV.fetch("APP_ROOT")
   config.eager_load = false
   config.logger = Logger.new(IO::NULL)

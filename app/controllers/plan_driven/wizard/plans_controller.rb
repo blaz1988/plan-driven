@@ -35,7 +35,8 @@ module PlanDriven
 
       def run
         job = start(Commands.argv(params[:do], command_fields))
-        redirect_to plan_path(@plan.key, params[:step].presence, job: job.id, anchor: params[:anchor])
+        redirect_to plan_path(@plan.key, params[:step].presence, job: job.id, open: params[:open].presence,
+                                                                 anchor: params[:open].presence)
       rescue ArgumentError => e
         redirect_to plan_path(@plan.key, params[:step].presence), alert: e.message
       end
@@ -84,10 +85,8 @@ module PlanDriven
         render(:new, status: :unprocessable_entity)
       end
 
-      # The interview reads each answer up to an empty line, so blank lines inside an answer are
-      # folded away.
       def interview_input(answers)
-        @template.asked.map { |section| "#{answers[section.key].to_s.strip.gsub(/\n\s*\n+/, "\n")}\n\n" }.join
+        Commands.interview_input(@template, answers)
       end
 
       # `edit --from` reads the new text from a file; it stays in tmp/ so the command can be rerun.

@@ -39,6 +39,15 @@ module PlanDriven
         [action.to_s, *builder.call(params.to_h.transform_keys(&:to_s)), "--yes"]
       end
 
+      # What `new` reads on stdin. The interview takes each answer up to an empty line, so blank
+      # lines inside an answer are folded away, and an empty answer is the empty line alone.
+      def interview_input(template, answers)
+        template.asked.map do |section|
+          answer = answers[section.key].to_s.strip.gsub(/\r\n?/, "\n").gsub(/\n\s*\n+/, "\n")
+          answer.empty? ? "\n" : "#{answer}\n\n"
+        end.join
+      end
+
       def required(params, name)
         params[name].to_s.strip.presence or raise ArgumentError, "#{name.tr("_", " ")} is required"
       end

@@ -42,7 +42,8 @@ module PlanDriven
         answer.empty? ? default.to_s : answer
       end
 
-      # Several lines, finished by an empty line.
+      # Several lines, finished by an empty line. Piped answers (from the wizard, or a script) are
+      # echoed, so the transcript reads like a typed interview.
       def ask_multiline(prompt)
         say paint(prompt, :cyan)
         muted "  (finish with an empty line)"
@@ -50,6 +51,7 @@ module PlanDriven
         loop do
           output.print "  > "
           line = read_line(nil)
+          output.puts(line.to_s.rstrip) if piped?
           break if line.nil? || line.strip.empty?
 
           lines << line.rstrip
@@ -91,6 +93,10 @@ module PlanDriven
       end
 
       private
+
+      def piped?
+        !(input.respond_to?(:tty?) && input.tty?)
+      end
 
       def read_line(at_end = "")
         line = input.gets
