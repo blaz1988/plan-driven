@@ -24,17 +24,15 @@ Zagreb. [Need Rails engineers?](#about-rubycode)
 
 ## Watch it deliver a feature
 
-[![Watch the plan_driven demo (32 min)](docs/images/demo.png)](https://github.com/blaz1988/plan-driven/releases/download/v0.1.0/plan-driven-demo.mp4)
+[![Watch the plan_driven demo (28 min)](docs/images/demo.png)](https://github.com/blaz1988/plan-driven/releases/download/v0.1.0/plan-driven-demo.mp4)
 
 **[▶ Watch the demo](https://github.com/blaz1988/plan-driven/releases/download/v0.1.0/plan-driven-demo.mp4)**
-(32 minutes, narrated, with captions). One feature, RSVPs with a waitlist, goes from an
+(28 minutes, narrated, with captions). One feature, RSVPs with a waitlist, goes from an
 idea to production code in a new Rails 8 app,
 [Gather](https://github.com/blaz1988/gather). Nothing in it is staged: the plan, the five
 tickets, the five pull requests ([#8](https://github.com/blaz1988/gather/pull/8) to
 [#12](https://github.com/blaz1988/gather/pull/12)) and the delivery report are all in that
-repository. The planner and the five agents ran on Claude Opus 5.5 through Cursor. Near the
-end, a second feature, comments on events, is planned in the
-[browser wizard](#the-browser-wizard) instead of the terminal.
+repository. The planner and the five agents ran on Claude Opus 5.5 through Cursor.
 
 <details>
 <summary>Chapters</summary>
@@ -59,9 +57,7 @@ end, a second feature, comments on events, is planned in the
 | 23:15 | The organizer's attendee list (T4) |
 | 24:50 | Evidence: 33 of 33 acceptance criteria, and the delivery report |
 | 26:04 | The finished feature in the app |
-| 27:15 | The browser wizard, and a second feature planned with it (PD-3) |
-| 30:52 | The same run in the terminal: `list` and `log` |
-| 31:27 | Recap |
+| 27:15 | Recap |
 
 </details>
 
