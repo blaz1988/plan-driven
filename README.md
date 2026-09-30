@@ -40,22 +40,22 @@ repository. The planner and the five agents ran on Claude Opus 5.5 through Curso
 | Time | Chapter |
 | ---: | --- |
 | 0:00 | Why plan_driven, the flow, and the guards |
-| 2:06 | The app before the feature |
-| 2:45 | `doctor`: keys, repository and the Cursor connection |
-| 3:11 | The interview |
-| 4:10 | Reading the implementation plan |
-| 6:02 | Deciding the open questions, then approving |
-| 7:17 | Tickets: drafted, steered to five, read and approved |
-| 9:38 | The tickets as GitHub issues |
-| 10:08 | What the agent is told, and starting the first agent |
-| 11:04 | Reading the first pull request, `review`, `approve-pr` and `merge` |
-| 13:15 | The model and its rules (T2) |
-| 15:19 | The RSVP card, tried on the branch before merging (T3) |
-| 17:37 | Feedback: a behind-main warning and a refactor (T5) |
-| 20:08 | The organizer's attendee list (T4) |
-| 21:43 | Evidence: 33 of 33 acceptance criteria, and the delivery report |
-| 22:58 | The finished feature in the app |
-| 24:09 | Recap |
+| 2:10 | The app before the feature |
+| 2:49 | `doctor`: keys, repository and the Cursor connection |
+| 3:15 | The interview |
+| 4:14 | Reading the implementation plan |
+| 6:05 | Deciding the open questions, then approving |
+| 7:20 | Tickets: drafted, steered to five, read and approved |
+| 9:42 | The tickets as GitHub issues |
+| 10:12 | What the agent is told, and starting the first agent |
+| 11:08 | Reading the first pull request, `review`, `approve-pr` and `merge` |
+| 13:18 | The model and its rules (T2) |
+| 15:22 | The RSVP card, tried on the branch before merging (T3) |
+| 17:41 | Feedback: a behind-main warning and a refactor (T5) |
+| 20:12 | The organizer's attendee list (T4) |
+| 21:47 | Evidence: 33 of 33 acceptance criteria, and the delivery report |
+| 23:01 | The finished feature in the app |
+| 24:12 | Recap |
 
 </details>
 
