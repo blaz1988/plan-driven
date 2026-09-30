@@ -24,10 +24,10 @@ Zagreb. [Need Rails engineers?](#about-rubycode)
 
 ## Watch it deliver a feature
 
-[![Watch the plan_driven demo (25 min)](docs/images/demo.png)](https://github.com/blaz1988/plan-driven/releases/download/v0.1.0/plan-driven-demo.mp4)
+[![Watch the plan_driven demo (28 min)](docs/images/demo.png)](https://github.com/blaz1988/plan-driven/releases/download/v0.1.0/plan-driven-demo.mp4)
 
 **[▶ Watch the demo](https://github.com/blaz1988/plan-driven/releases/download/v0.1.0/plan-driven-demo.mp4)**
-(25 minutes, narrated, with captions). One feature, RSVPs with a waitlist, goes from an
+(28 minutes, narrated, with captions). One feature, RSVPs with a waitlist, goes from an
 idea to production code in a new Rails 8 app,
 [Gather](https://github.com/blaz1988/gather). Nothing in it is staged: the plan, the five
 tickets, the five pull requests ([#8](https://github.com/blaz1988/gather/pull/8) to
@@ -44,18 +44,20 @@ repository. The planner and the five agents ran on Claude Opus 5.5 through Curso
 | 2:49 | `doctor`: keys, repository and the Cursor connection |
 | 3:15 | The interview |
 | 4:14 | Reading the implementation plan |
-| 6:05 | Deciding the open questions, then approving |
-| 7:20 | Tickets: drafted, steered to five, read and approved |
-| 9:42 | The tickets as GitHub issues |
-| 10:12 | What the agent is told, and starting the first agent |
-| 11:08 | Reading the first pull request, `review`, `approve-pr` and `merge` |
-| 13:18 | The model and its rules (T2) |
-| 15:22 | The RSVP card, tried on the branch before merging (T3) |
-| 17:41 | Feedback: a behind-main warning and a refactor (T5) |
-| 20:12 | The organizer's attendee list (T4) |
-| 21:47 | Evidence: 33 of 33 acceptance criteria, and the delivery report |
-| 23:01 | The finished feature in the app |
-| 24:12 | Recap |
+| 6:05 | Deciding the open questions with `redraft` |
+| 6:50 | Every section can be changed: Database changes redrafted and edited in vim (PD-2) |
+| 9:51 | Submitting and approving the plan |
+| 10:23 | Tickets: drafted, steered to five, read and approved |
+| 12:44 | The tickets as GitHub issues |
+| 13:15 | What the agent is told, and starting the first agent |
+| 14:10 | Reading the first pull request, `review`, `approve-pr` and `merge` |
+| 16:21 | The model and its rules (T2) |
+| 18:25 | The RSVP card, tried on the branch before merging (T3) |
+| 20:44 | Feedback: a behind-main warning and a refactor (T5) |
+| 23:15 | The organizer's attendee list (T4) |
+| 24:50 | Evidence: 33 of 33 acceptance criteria, and the delivery report |
+| 26:04 | The finished feature in the app |
+| 27:15 | Recap |
 
 </details>
 
@@ -319,8 +321,22 @@ column it cites exists.
 
 ![The plan, grounded in the real schema](docs/images/03-plan.png)
 
-Change what isn't right. `edit` opens a section in `$EDITOR`. `redraft` has the model rewrite
-one section from an instruction, which is the quickest way to record decisions:
+**Every section of the plan can be changed**, not only Outstanding questions: What, Why,
+Database changes, Application changes, Risks, Testing, any of them (the keys are listed under
+[Commands](#commands)). The draft is the model's proposal, and your team has the final say.
+There are two ways to change a section:
+
+- `edit PLAN SECTION` opens the section in `$VISUAL` or `$EDITOR` as Markdown. Use it for exact
+  changes: a column, a name, a step, a test case.
+- `redraft PLAN SECTION "instruction"` has the model rewrite only that section, following your
+  instruction. It reads the rest of the plan and the code while it does.
+
+Either way the change becomes a new revision, the plan goes back to draft, the guards run again
+and the Markdown, HTML and PDF are written again. `plan-driven log PLAN` lists every change.
+Change the plan through these commands, not by editing `plan.md`: the database is the source,
+and the files are rendered from it.
+
+`redraft` is also the quickest way to record decisions:
 
 ```
 $ bin/plan-driven redraft PD-1 outstanding_questions "Record my answers under Decided and keep only
@@ -336,6 +352,80 @@ Redrafting outstanding_questions...
 ```
 
 ![The decisions, recorded in the plan](docs/images/04-plan-decided.png)
+
+#### Example: changing the database design
+
+The agent's draft is a starting point, and the database design is where teams most often
+disagree with it. In Gather's second plan, PD-2 (event categories), the model suggested a string
+column on `events`:
+
+```
+$ bin/plan-driven show PD-2 --section database_changes
+### Step 1: Expand (migration `AddCategoryToEvents`)
+
+On table `events`:
+- Add column `category`: type `string`, **nullable**, default `'meetup'`.
+- Add composite index `index_events_on_category_and_starts_at` on `[:category, :starts_at]`. ...
+```
+
+The team wanted a table instead. `redraft` rewrites the section to that design, keeping the
+expand and contract steps:
+
+```
+$ bin/plan-driven redraft PD-2 database_changes "Use a categories table instead of a string column:
+  name and slug, seeded with meetup, workshop, talk and conference, and a category_id reference on events."
+Redrafting database_changes...
+Categories live in their own `categories` table, and each event points to one of them through
+`events.category_id`. ...
+### Step 1: Expand
+#### Migration `CreateCategories`
+New table `categories`:
+- `name` string, **not null**, no default. ...
+- `slug` string, **not null**, no default. ...
+...
+### Step 5: Contract (migration `EnforceCategoryOnEvents`)
+- `change_column_null :events, :category_id, false`.
+✓ All checks passed
+```
+
+A small change doesn't need the model. `edit` opens the section in your editor. Here, a `color`
+column is added to the new table, in the column list, the migration and the resulting schema:
+
+```
+$ EDITOR=vim bin/plan-driven edit PD-2 database_changes
+✓ Database changes updated; PD-2 is now revision 3 (draft)
+✓ All checks passed
+```
+
+![Adding a column to the plan in vim](docs/images/04b-edit-section.png)
+
+The guards check your edit the same way they check the model's draft (see [Guards](#guards)),
+and anything that fails is listed right after you save. `submit` refuses a plan with errors.
+
+Other sections that depend on the change follow the same way. The model reads the whole plan,
+so it picks up the new table and the `color` column:
+
+```
+$ bin/plan-driven redraft PD-2 application_changes "Follow the new Database changes: a Category model,
+  events.category_id instead of an enum, and the category colour on the card badge."
+...
+✓ All checks passed
+
+$ bin/plan-driven submit PD-2
+✓ PD-2 revision 4 is in review
+
+$ bin/plan-driven log PD-2
+When              Event         Ticket  By                         Details
+2026-09-30 10:07  plan.drafted          Ivan Blažević <ivan...>    model=cursor/claude-opus-5-5 ...
+2026-09-30 10:10  plan.revised          Ivan Blažević <ivan...>    sections=database_changes
+2026-09-30 10:16  plan.revised          Ivan Blažević <ivan...>    sections=database_changes
+...
+```
+
+You can change a plan in draft, in review and after it's approved. An approval belongs to a
+revision, so a changed plan must be approved again. Once its tickets are drafted, the plan is
+locked, because the tickets and pull requests were built from it. Changes after that go into a
+follow-up plan.
 
 ### 3. Submit and approve
 
