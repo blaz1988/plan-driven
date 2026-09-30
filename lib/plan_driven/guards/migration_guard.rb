@@ -26,7 +26,7 @@ module PlanDriven
       CONCURRENT = /concurrent|algorithm:\s*:concurrently|disable_ddl_transaction/i
       NEW_TABLE = /
         create_table\s+[:"']?([a-z][a-z0-9_]+)
-        | new\s+table:?\s*`?([a-z][a-z0-9_]+)
+        | new\s+table(?::\s*`?|\s+`)([a-z][a-z0-9_]+)
         | create\s+(?:a\s+|the\s+)?(?:new\s+)?`([a-z][a-z0-9_]+)`\s+table
         | create\s+(?:a\s+|the\s+)?(?:new\s+)?table\s+`?([a-z][a-z0-9_]+)
         | create:?\s+`([a-z][a-z0-9_]+)`(?!\s+(?:column|index))
@@ -48,8 +48,10 @@ module PlanDriven
         report
       end
 
+      # Tables the section creates. One that's already in the schema isn't new, however it's
+      # mentioned (a plan citing `20260929_create_rsvps.rb` as an example creates nothing).
       def new_tables
-        @text.scan(NEW_TABLE).flatten.compact.map(&:downcase).uniq
+        @text.scan(NEW_TABLE).flatten.compact.map(&:downcase).uniq - @schema.tables
       end
 
       private

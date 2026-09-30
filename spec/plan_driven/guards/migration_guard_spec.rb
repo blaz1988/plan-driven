@@ -135,4 +135,10 @@ RSpec.describe PlanDriven::Guards::MigrationGuard do
            "Create `status` column"
     expect(described_class.new(text, schema: schema).new_tables).to eq(%w[rsvps badges])
   end
+
+  it "doesn't take prose or existing tables for new ones" do
+    text = "This is a new table only for comments: `comments`.\nSame as `db/migrate/1_create_forms.rb`.\n" \
+           "create_table :comments"
+    expect(described_class.new(text, schema: schema).new_tables).to eq(%w[comments])
+  end
 end
