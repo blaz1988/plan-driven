@@ -8,15 +8,16 @@
   <style>
     :root { --ink:#1f2330; --muted:#6b7280; --line:#e5e7eb; --bg:#f7f7f9; --accent:#cc342d; --ok:#15803d; --warn:#b45309; --bad:#b91c1c; }
     * { box-sizing: border-box; }
+    [id] { scroll-margin-top: 64px; }
     body { margin:0; font:15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; color:var(--ink); background:var(--bg); }
     a { color:var(--accent); }
-    header.top { display:flex; align-items:center; gap:16px; padding:12px 24px; background:#fff; border-bottom:1px solid var(--line); }
+    header.top { display:flex; align-items:center; gap:16px; padding:12px 24px; height:53px; background:#fff; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:10; }
     header.top .brand { font-weight:700; text-decoration:none; color:var(--ink); }
     header.top .brand span { color:var(--accent); }
     header.top form { margin-left:auto; display:flex; gap:6px; align-items:center; color:var(--muted); font-size:13px; }
     .layout { display:grid; grid-template-columns:minmax(0, 1fr) minmax(360px, 42%); min-height:calc(100vh - 53px); }
     main { padding:24px 32px 48px; }
-    aside.terminal { background:#0f1117; color:#d6d9e0; display:flex; flex-direction:column; position:sticky; top:0; height:calc(100vh - 53px); }
+    aside.terminal { background:#0f1117; color:#d6d9e0; display:flex; flex-direction:column; position:sticky; top:53px; height:calc(100vh - 53px); }
     .terminal .bar { display:flex; align-items:center; gap:8px; padding:10px 14px; border-bottom:1px solid #232734; font-size:12px; color:#8b93a7; }
     .terminal .bar .state { margin-left:auto; padding:2px 8px; border-radius:10px; background:#232734; }
     .terminal .bar .state.running { background:#1e3a8a; color:#dbeafe; }
