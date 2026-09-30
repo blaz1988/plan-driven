@@ -1,36 +1,78 @@
 # plan_driven
 
 [![CI](https://github.com/blaz1988/plan-driven/actions/workflows/main.yml/badge.svg)](https://github.com/blaz1988/plan-driven/actions/workflows/main.yml)
+[![Gem Version](https://img.shields.io/gem/v/plan_driven.svg)](https://rubygems.org/gems/plan_driven)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.txt)
 [![Ruby](https://img.shields.io/badge/Ruby-3.1%20to%203.4-CC342D.svg)](#rails-and-ruby-support)
 [![Rails](https://img.shields.io/badge/Rails-7.0%20to%208.1-D30001.svg)](#rails-and-ruby-support)
 
 **From implementation plan to merged, tested pull requests, driven from the terminal.**
 
-`plan_driven` runs a Rails team's delivery process from the command line. A short interview in
-the terminal becomes an implementation plan grounded in your real schema. Guards written in
-Ruby check the plan, it's rendered to PDF, and it's approved. The approved plan becomes
-tickets, each ticket goes to a Cursor cloud agent that opens a pull request, and only the pull
-requests you approve are merged. Acceptance criteria map to Cucumber scenarios, so the delivery
-report shows which criterion is proven by which passing test.
+`plan_driven` runs a Rails team's delivery process from the command line, with AI agents doing
+the writing and your team making the decisions. A short interview in the terminal becomes an
+implementation plan grounded in your real schema and code. Guards written in Ruby check the
+plan, you read it and approve it. The approved plan becomes tickets, each ticket goes to a
+Cursor cloud agent that opens a pull request, and only the pull requests you approve are
+merged. Acceptance criteria map to Cucumber scenarios, so the delivery report shows which
+criterion is proven by which passing test.
 
 Every phase leaves documentation behind in `docs/plans/`: the plan, the tickets, who approved
 what, and the delivery report.
 
-Built and maintained by [Rubycode](https://rubycode.co), a Ruby on Rails consultancy from
+Built and maintained by [Rubycode](https://rubycode.co), a Ruby on Rails company from
 Zagreb. [Need Rails engineers?](#about-rubycode)
+
+## Watch it deliver a feature
+
+[![Watch the plan_driven demo (25 min)](docs/images/demo.png)](https://github.com/blaz1988/plan-driven/releases/download/v0.1.0/plan-driven-demo.mp4)
+
+**[▶ Watch the demo](https://github.com/blaz1988/plan-driven/releases/download/v0.1.0/plan-driven-demo.mp4)**
+(25 minutes, narrated, with captions). One feature, RSVPs with a waitlist, goes from an
+idea to production code in a new Rails 8 app,
+[Gather](https://github.com/blaz1988/gather). Nothing in it is staged: the plan, the five
+tickets, the five pull requests ([#8](https://github.com/blaz1988/gather/pull/8) to
+[#12](https://github.com/blaz1988/gather/pull/12)) and the delivery report are all in that
+repository. The planner and the five agents ran on Claude Opus 5.5 through Cursor.
+
+<details>
+<summary>Chapters</summary>
+
+| Time | Chapter |
+| ---: | --- |
+| 0:00 | Why plan_driven, the flow, and the guards |
+| 2:06 | The app before the feature |
+| 2:45 | `doctor`: keys, repository and the Cursor connection |
+| 3:11 | The interview |
+| 4:10 | Reading the implementation plan |
+| 6:02 | Deciding the open questions, then approving |
+| 7:17 | Tickets: drafted, steered to five, read and approved |
+| 9:38 | The tickets as GitHub issues |
+| 10:08 | What the agent is told, and starting the first agent |
+| 11:04 | Reading the first pull request, `review`, `approve-pr` and `merge` |
+| 13:15 | The model and its rules (T2) |
+| 15:19 | The RSVP card, tried on the branch before merging (T3) |
+| 17:37 | Feedback: a behind-main warning and a refactor (T5) |
+| 20:08 | The organizer's attendee list (T4) |
+| 21:43 | Evidence: 33 of 33 acceptance criteria, and the delivery report |
+| 22:58 | The finished feature in the app |
+| 24:09 | Recap |
+
+</details>
 
 ## Contents
 
 - [How it works](#how-it-works)
+- [Requirements](#requirements)
 - [Installation](#installation)
-- [A plan from start to finish](#a-plan-from-start-to-finish)
+- [Getting your app ready](#getting-your-app-ready)
+- [Walkthrough: one feature from idea to merged](#walkthrough-one-feature-from-idea-to-merged)
 - [Guards](#guards)
 - [What the agent is told](#what-the-agent-is-told)
-- [Evidence and the delivery report](#evidence-and-the-delivery-report)
 - [Commands](#commands)
 - [Configuration](#configuration)
 - [Keys](#keys)
+- [Working as a team](#working-as-a-team)
+- [Troubleshooting](#troubleshooting)
 - [Rails and Ruby support](#rails-and-ruby-support)
 - [Development](#development)
 - [Contributing](#contributing)
@@ -53,7 +95,8 @@ Zagreb. [Need Rails engineers?](#about-rubycode)
         ▼
  plan-driven develop      one Cursor cloud agent per ready ticket, one PR each
  plan-driven status       agent finished ─▶ PR open
- plan-driven review       PrGuard: scope, specs, Cucumber scenarios, CI
+ plan-driven review       PrGuard: scope, specs, Cucumber scenarios, CI, up to date
+ plan-driven feedback     the same agent pushes a fix to the same PR
  plan-driven approve-pr   PR approved
  plan-driven merge        merged; dependent tickets become ready
         │
@@ -72,129 +115,410 @@ title prefixes, estimates on the team's scale and the order of expand and contra
 enforced or corrected in code rather than asked for in a prompt. Guard errors go back to the
 model as a list to fix, and a plan that still fails isn't accepted.
 
+## Requirements
+
+- Ruby 3.1+ and Rails 7.0+ (see [support](#rails-and-ruby-support)).
+- The application on GitHub, with CI running on pull requests.
+- A [Cursor](https://cursor.com) account with the GitHub integration connected to that
+  repository, and a Cursor API key (Cursor dashboard, Integrations). The agents run as
+  Cursor cloud agents.
+- A model for drafting plans and tickets, one of:
+  - **Cursor** (`llm_provider :cursor`): any model on your Cursor account, Claude Opus 5.5 by
+    default. Needs Node 22.13+ and the Cursor SDK. No other LLM key.
+  - **OpenAI** (`:openai`, GPT-4.1 by default) or any OpenAI-compatible gateway.
+  - **Anthropic** (`:anthropic`, Claude Sonnet 4.5 by default).
+- A GitHub token that can read and write issues and pull requests (see [Keys](#keys)).
+- Optional: Google Chrome or Chromium for PDFs, and Cucumber for the evidence step.
+
 ## Installation
 
-Add the gem to your application's Gemfile:
+### 1. Add the gem
 
 ```ruby
+# Gemfile
 gem "plan_driven", group: :development
 ```
 
-Install it, generate the tables and the initializer, and add your keys:
-
 ```bash
 bundle install
+bundle binstubs plan_driven          # bin/plan-driven, so you don't type bundle exec
+```
+
+### 2. Generate the tables and the initializer
+
+```bash
 bin/rails generate plan_driven:install
 bin/rails db:migrate
-bundle exec plan-driven configure
-bundle exec plan-driven doctor
 ```
 
 The generator adds five tables (`plan_driven_plans`, `_tickets`, `_approvals`, `_events` and
 `_evidence_runs`), `config/initializers/plan_driven.rb` and `docs/plans/`. Nothing else in
-your application changes.
+your application changes. The tables live in your development database, next to your app,
+so the plan's phase and its audit trail travel with the code you're working on.
 
-For PDFs, install Google Chrome or Chromium. Without one, plans are written as Markdown and
-HTML only.
+### 3. Choose the model that drafts
 
-## A plan from start to finish
+Planning is where a stronger model pays for itself. The demo drafts with Claude Opus 5.5 on a
+Cursor account, which reads the application's code (read-only) while it writes:
+
+```ruby
+# config/initializers/plan_driven.rb
+PlanDriven.configure do |config|
+  config.llm_provider = :cursor
+  config.llm_model = "claude-opus-5-5"
+  config.request_timeout = 600          # a full plan from a large model can take a few minutes
+
+  config.agent_model = "claude-opus-5-5" # the model the cloud agents use
+end
+```
+
+`:cursor` needs Node 22.13+ and the Cursor SDK, installed outside your app:
+
+```bash
+npm install --prefix ~/.plan_driven/node @cursor/sdk
+```
+
+If `node` on your `PATH` is older, point the gem at a newer one with
+`config.node_command = "/path/to/node"` or `PLAN_DRIVEN_NODE`.
+
+With OpenAI or Anthropic instead:
+
+```ruby
+config.llm_provider = :openai            # gpt-4.1 by default
+config.llm_provider = :anthropic         # claude-sonnet-4-5 by default
+config.llm_api_base = "https://gateway.example.com/v1"   # optional, OpenAI-compatible
+```
+
+### 4. Add your keys
+
+```bash
+bin/plan-driven configure
+```
+
+It asks for each key, stores it in `~/.plan_driven/config` (mode 0600) and never echoes it. Keys
+already in the environment are used as they are and never copied to disk. Nothing is written
+into your application. See [Keys](#keys).
+
+### 5. Check everything
+
+```
+$ bin/plan-driven doctor
+
+plan-driven 0.1.0
+✓ Rails application: plan_driven tables present
+LLM: cursor/claude-opus-5-5
+✓ Cursor SDK: Node v24.21.0, @cursor/sdk found
+✓ cursor_api_key: /Users/ivan/.plan_driven/config
+✓ github_token: /Users/ivan/.plan_driven/config
+✓ GitHub repository: blaz1988/gather
+✓ PDF: Google Chrome
+✓ Cursor API: ivan@example.com
+✓ Agent model: claude-opus-5-5
+```
+
+`doctor` checks the tables, the drafting model, Node and the SDK, each key, the GitHub
+repository (from `config.github_repository` or the `origin` remote), the PDF browser, the Cursor
+API and that your key can start agents with `agent_model`.
+
+## Getting your app ready
+
+The agents and the review guards rely on a few things in your repository. Set them up once.
+
+**CI on pull requests.** `review` and `merge` read the checks on the pull request, and nothing
+is merged while a check fails or is still running. Run your linters and your whole suite,
+including Cucumber:
+
+```yaml
+# .github/workflows/ci.yml (the test job)
+- name: Prepare the database
+  run: bin/rails db:create db:schema:load
+- name: RSpec
+  run: bundle exec rspec
+- name: Cucumber
+  run: bundle exec cucumber --publish-quiet
+```
+
+**Cucumber.** Every acceptance criterion needs a scenario tagged with its ticket and number,
+which is how `evidence` proves it. Add `cucumber-rails` to the test group and run
+`bin/rails generate cucumber:install`, or let the first agent do it: the prompt tells it to if
+the app has no Cucumber setup. Shared steps, such as signing in, keep the agents' features
+short; point them out in `team_rules`.
+
+**Your conventions.** `team_rules` and `extra_context` go into every agent prompt, and the
+drafting model reads them too. Write them the way you'd brief a new engineer:
+
+```ruby
+config.team_rules = [
+  "Views are ERB and reuse the classes in app/assets/stylesheets/application.css.",
+  "Authentication is Rails 8's: Current.user, `allow_unauthenticated_access`, `authenticated?` in views.",
+  "Keep controllers thin; put a multi-step change in a model method or a PORO in app/models.",
+  "Tests are RSpec request and model specs with FactoryBot, and Cucumber features that reuse " \
+  "features/step_definitions/common_steps.rb (e.g. `Given I am signed in as \"Ana Kovač\"`).",
+  "bin/rubocop, bundle exec rspec and bundle exec cucumber must pass; CI runs all three."
+]
+config.extra_context = "Gather lists community events. An event has an organizer (a User) and a " \
+                       "capacity in seats. Anyone can browse; signing in is needed to act."
+```
+
+**Who approves.** `plan_approvals` and `ticket_approvals` list the roles that must sign off,
+for example `%w[review qa devops director]`. One person can hold every role on a small team.
+
+## Walkthrough: one feature from idea to merged
+
+This is the run from the demo video, in [Gather](https://github.com/blaz1988/gather), with the
+real output. The plan it produced is in
+[`docs/plans/pd-1-rsvps-with-a-waitlist`](https://github.com/blaz1988/gather/tree/main/docs/plans/pd-1-rsvps-with-a-waitlist).
 
 ### 1. The interview
 
-```
-$ bundle exec plan-driven new "Polymorphic form ownership"
+`new` asks the questions only people can answer: what, why, where, who, when, background and
+what's out of scope. Each answer ends with an empty line.
 
-Plan: Polymorphic form ownership
+```
+$ bin/plan-driven new "RSVPs with a waitlist"
+
+Plan: RSVPs with a waitlist
 A few questions first. The rest of the plan is drafted from your answers and the schema.
 What: What are we building? Describe the change as the user will see it.
-  > Forms get polymorphic ownership so a form can belong to a Business Process or be
-  > snapshotted onto a Project.
+  > Signed-in people can RSVP to an event and cancel their RSVP. The event page shows how many seats are left.
+  > When an event is full, RSVPing puts you on a waitlist; when someone cancels, the first person waiting gets the seat.
+  > The organizer sees who is going and who is waiting.
   >
 Why: Why now? What problem or gap does it close?
+  > Events have a capacity, but nothing counts seats. Organizers collect names in chat and the small rooms overflow.
+  >
   ...
-Drafting with openai/gpt-4.1...
+Out of Scope: What is explicitly out of scope? (optional)
+  > Email notifications, paid tickets, guests (+1), and changing capacity after people have RSVPed.
+  >
+
+Drafting with cursor/claude-opus-5-5...
 ✓ PD-1 drafted (1 attempt)
-  assumed: Business Process stays the default owner
-✓ All checks passed
-  docs/plans/pd-1-polymorphic-form-ownership/plan.md
-  docs/plans/pd-1-polymorphic-form-ownership/plan.html
-  docs/plans/pd-1-polymorphic-form-ownership/plan.pdf
-```
-
-You answer the questions only people can answer: what, why, where, who, when, background and
-what's out of scope. The model drafts everything else from your answers and your schema:
-the existing data structure, architecture, database, application and infrastructure changes,
-risks, performance, security with a risk level, monitoring, outstanding questions and testing.
-The sections follow the implementation plan template teams commonly keep in Confluence.
-
-![The plan as a PDF](docs/images/plan-pdf.png)
-
-### 2. Review and approval
-
-```bash
-bundle exec plan-driven show PD-1                         # or open the PDF
-bundle exec plan-driven edit PD-1 database_changes        # in $EDITOR
-bundle exec plan-driven redraft PD-1 monitoring "add alerting on the backfill"
-bundle exec plan-driven submit PD-1
-bundle exec plan-driven approve PD-1 --as review --note "Rollout is clear"
-```
-
-Approval roles come from `config.plan_approvals`, for example
-`%w[review qa devops director]`. The plan is approved when every role has signed off on the
-current revision.
-
-### 3. Tickets
-
-```
-$ bundle exec plan-driven tickets PD-1
-  fixed: T1: title prefixed with "Migration:"
-  fixed: T3: title prefixed with "Data migration:"
-✓ Tickets pass every check
-#   Title                                             Kind        Pts  Status
-T1  Migration: Add polymorphic ownership to forms     migration   2    draft
-T2  Write both owners for new forms                   dual_write  3    draft
-T3  Data migration: Backfill formable for existin...  backfill    2    draft
-T4  Read forms through formable                       switch      3    draft
-T5  Migration: Remove legacy business_process_id ...  migration   1    draft
-
-$ bundle exec plan-driven approve-tickets PD-1
-✓ 5 tickets approved
-  T1 -> issue #41
+  assumed: Cancelling deletes the `rsvps` row, so there is no cancelled status. Someone who RSVPs again joins the back of the waitlist.
+  assumed: The waitlist is first come, first served by `created_at`, then `id`. Promotion is automatic and immediate, with no confirmation step.
+  assumed: The organizer's attendee list shows `users.name` only. `users.email_address` is not shown.
   ...
+✓ All checks passed
+  docs/plans/pd-1-rsvps-with-a-waitlist/plan.md
+  docs/plans/pd-1-rsvps-with-a-waitlist/plan.html
+  docs/plans/pd-1-rsvps-with-a-waitlist/plan.pdf
+Next: read PD-1 (`plan-driven show PD-1` or the PDF), then `plan-driven submit PD-1`.
 ```
 
-Every ticket has a type, a kind, a description, testable acceptance criteria, an estimate,
-its dependencies and the tables it touches. They're added to the plan's PDF as a work
-overview table. Approving them creates a GitHub issue for each, unless `sync_issues` is off.
+The model drafts everything else from your answers, the schema and the code: the existing data
+structure, the architectural, database, application and infrastructure changes, risks,
+performance, security with a risk level, monitoring, outstanding questions and testing. The
+sections follow the implementation plan template teams commonly keep in Confluence. Every
+assumption it made is listed, so you know what to check first.
 
-### 4. Development
+### 2. Read the plan
+
+Open `plan.pdf` or `plan.html`, or print it with `show PD-1` (`--section database_changes` for
+one section). Existing Data Structure is checked against the app, so every model, file and
+column it cites exists.
+
+![The plan, grounded in the real schema](docs/images/03-plan.png)
+
+Change what isn't right. `edit` opens a section in `$EDITOR`. `redraft` has the model rewrite
+one section from an instruction, which is the quickest way to record decisions:
 
 ```
-$ bundle exec plan-driven develop PD-1
-  T1 Migration: Add polymorphic ownership to forms
+$ bin/plan-driven redraft PD-1 outstanding_questions "Record my answers under Decided and keep only
+  the non-blocking questions open. The organizer cannot RSVP to their own event. RSVP and cancel
+  close when the event starts ..."
+Redrafting outstanding_questions...
+### Decided
+- **Organizer RSVPs:** the organizer cannot RSVP to their own event. `Event#rsvp` rejects the call
+  when `organized_by?(user)` is true. ...
+### Still open (not blocking)
+- Where does the production SQLite database live? ...
+✓ All checks passed
+```
+
+![The decisions, recorded in the plan](docs/images/04-plan-decided.png)
+
+### 3. Submit and approve
+
+```
+$ bin/plan-driven submit PD-1
+✓ PD-1 revision 3 is in review
+Approvals needed: review. `plan-driven approve PD-1 --as ROLE`
+
+$ bin/plan-driven approve PD-1 --note "Read it end to end. Decisions recorded under Outstanding questions."
+✓ PD-1 approved as review by Ivan Blažević <ivan.blazevic@rubycode.co>
+✓ Every approval is in. PD-1 is approved; `plan-driven tickets PD-1` drafts the tickets.
+```
+
+`submit` runs the guards again and refuses a plan that fails them. `reject PD-1 --note "..."`
+sends it back to draft. An approval belongs to a revision: edit the plan afterwards and it
+needs approving again.
+
+### 4. Tickets
+
+`tickets` splits the approved plan into tickets. Warnings show where the breakdown could be
+better. Pass an instruction to redraft the whole set:
+
+```
+$ bin/plan-driven tickets PD-1
+! T3 has 10 acceptance criteria; consider splitting it
+#   Title                                             Kind       Pts  Status
+T1  Migration: Create rsvps table                     migration  2    draft
+T2  Show seats left on the event page                 code       3    draft
+...
+T9  Docs: RSVP launch runbook and invariant checks    docs       1    draft
+
+$ bin/plan-driven tickets PD-1 "Make it five tickets with at most 7 acceptance criteria each: the
+  rsvps migration; the Rsvp model and Event rules ...; seats left on the events index. Drop the docs ticket."
+✓ Tickets pass every check
+#   Title                                             Kind       Pts  Status
+T1  Migration: Create rsvps table                     migration  1    draft
+T2  Add Rsvp model and Event rules for RSVP, canc...  code       5    draft
+T3  Let signed-in people RSVP, join the waitlist ...  code       5    draft
+T4  Show the organizer who is going and who is wa...  code       3    draft
+T5  Show seats left on the events index               code       2    draft
+```
+
+Every ticket has a type, a kind, a description, testable acceptance criteria, an estimate, its
+dependencies and the tables it touches. They're added to the plan's PDF as a work overview, so
+you read them where you read the plan.
+
+![Tickets in the plan's work overview](docs/images/06-work-overview.png)
+
+```
+$ bin/plan-driven approve-tickets PD-1
+✓ 5 tickets approved
+  T1 -> issue #3
+  ...
+  T5 -> issue #7
+```
+
+Approving creates a GitHub issue for each ticket, with the story, the acceptance criteria and
+the implementation notes, unless `sync_issues` is off.
+
+![A ticket as a GitHub issue](docs/images/07-issue.png)
+
+### 5. Development
+
+`prompt PD-1/T1` prints exactly what the agent will be told ([see below](#what-the-agent-is-told)).
+`develop` starts one Cursor cloud agent for each ready ticket:
+
+```
+$ bin/plan-driven develop PD-1
+  T1 Migration: Create rsvps table
 Start 1 Cursor cloud agent(s)? [y/N] y
 ✓ T1 agent started: https://cursor.com/agents/bc-…
+Each agent opens a pull request when it finishes. `plan-driven status PD-1` checks on them.
 
-$ bundle exec plan-driven status PD-1
-$ bundle exec plan-driven review PD-1/T1
-$ bundle exec plan-driven feedback PD-1/T1 "Use batches of 500"
-$ bundle exec plan-driven approve-pr PD-1/T1
-$ bundle exec plan-driven merge PD-1/T1
-This merges into main. Type T1 to continue: T1
-✓ PD-1/T1 merged (4f1c2ab)
-Now ready: T2, T3. `plan-driven develop PD-1`
+$ bin/plan-driven status PD-1
+PD-1 RSVPs with a waitlist: in development
+#   Title                                             Kind       Pts  Status    PR
+T1  Migration: Create rsvps table                     migration  1    pr open   https://github.com/blaz1988/gather/pull/8
+T2  Add Rsvp model and Event rules for RSVP, canc...  code       5    approved
+...
+Next: `plan-driven review PD-1/T1`
 ```
 
-Only tickets whose dependencies are merged are started, up to `max_parallel_agents` at a time,
-so each agent begins from a branch that already has the work it builds on. Feedback goes to the
-same agent as a follow-up, and the agent pushes to the same pull request. Merging asks you to
-type the ticket key, and nothing is merged while a guard fails or CI is still running. Pull
-requests merged directly on GitHub are picked up by `status`.
+Only tickets whose dependencies are merged start, up to `max_parallel_agents` at a time, so
+each agent begins from a `main` that already has the work it builds on. Run `develop PD-1`
+again after each merge; `develop PD-1 T4` starts one ticket.
+
+### 6. Review the pull request
+
+Read the pull request on GitHub as you would any other. Then run the guards:
+
+![The agent's pull request](docs/images/09-pull-request-files.png)
+
+```
+$ bin/plan-driven review PD-1/T1
+Reviewing https://github.com/blaz1988/gather/pull/8
+  ✓ Refers to PD-1/T1 and closes #3
+  ✓ 7 files, 309 changed lines (limit 800)
+  ✓ 5 spec and feature files changed
+  ✓ A migration ticket, and it only changes db/ and tests
+  ✓ All 6 acceptance criteria have a scenario tagged @pd-1-t1 @ac-N
+  ✓ CI is green: lint, scan_js, test, scan_ruby
+✓ The pull request passes every check
+```
+
+For UI work, check out the branch and try it. The guards prove the criteria have tests; you
+decide whether the feature is right.
+
+![Trying the RSVP card on the branch](docs/images/12-try-branch.png)
+
+### 7. Feedback
+
+When something isn't right, send it to the same agent. It pushes to the same pull request, and
+you review again:
+
+```
+$ bin/plan-driven review PD-1/T5
+  ...
+! The branch is 2 commit(s) behind main, so CI ran without them. Ask the agent to merge main and
+  run the checks again (`plan-driven feedback`).
+
+$ bin/plan-driven feedback PD-1/T5 "Two things. T3 is merged, so merge main into this branch and
+  run RuboCop, RSpec and Cucumber again. And seats_left_label repeats the clamp in Event#seats_left:
+  let Event#seats_left take a preloaded going count, and have the helper use it."
+✓ Sent to PD-1/T5's agent; it will push to the same pull request
+```
+
+### 8. Approve and merge
+
+```
+$ bin/plan-driven approve-pr PD-1/T1 --note "Read the migration and the feature. Matches the plan."
+✓ All checks passed
+✓ PD-1/T1 pull request approved by Ivan Blažević <ivan.blazevic@rubycode.co>
+
+$ bin/plan-driven merge PD-1/T1
+PD-1/T1 Migration: Create rsvps table
+https://github.com/blaz1988/gather/pull/8, approved by Ivan Blažević <ivan.blazevic@rubycode.co>
+This merges into main. Type T1 to continue: T1
+✓ PD-1/T1 merged (bafbdf1)
+Now ready: T2. `plan-driven develop PD-1`
+```
+
+`approve-pr` runs the guards first, records the approval, and posts it on the pull request as
+a review comment with your note. `merge` runs them
+again, marks the agent's draft pull request ready, and merges with `merge_method` once you type
+the ticket key. It refuses while a guard fails or CI is still running. A pull request merged
+directly on GitHub is picked up by `status`.
+
+### 9. Evidence and the delivery report
+
+```
+$ bin/plan-driven evidence PD-1
+Running cucumber --tags "@pd-1-t1 or @pd-1-t2 or @pd-1-t3 or @pd-1-t4 or @pd-1-t5"
+AC    Result  Criterion
+T1.1  passed  Running bin/rails db:migrate creates the rsvps table with event_id,...
+T2.4  passed  When several threads race for the last seat of an event, exactly on...
+T3.3  passed  When 3 people are going, a fourth person sees "Full" and a "Join wa...
+T4.6  passed  No attendee's email address appears anywhere on the event page, inc...
+...
+✓ 33 of 33 acceptance criteria are proven by a passing scenario.
+
+$ bin/plan-driven report PD-1
+✓ Delivery report for PD-1 written
+  docs/plans/pd-1-rsvps-with-a-waitlist/delivery-report.md
+  docs/plans/pd-1-rsvps-with-a-waitlist/delivery-report.html
+  docs/plans/pd-1-rsvps-with-a-waitlist/delivery-report.pdf
+```
+
+`evidence` runs the plan's scenarios on your machine and stores the result with the commit it
+ran on; `--from cucumber.json` imports a run from CI instead. The delivery report lists each
+ticket with its pull request, merge commit and approver, then every acceptance criterion with
+the scenario that proves it, the guard findings, every approval and the full timeline. Commit
+`docs/plans/` with it, and the plan and its proof stay next to the code.
+
+![The delivery report](docs/images/15-delivery-report.png)
+
+### The result
+
+![Maja, promoted from the waitlist when a seat opened](docs/images/17-app-promoted.png)
 
 ## Guards
 
-Guards are plain Ruby classes that return errors, warnings and fixes. An error blocks the next
-step and a warning is shown and recorded.
+Guards are plain Ruby classes that return errors, warnings, fixes and the checks that passed.
+An error blocks the next step and a warning is shown and recorded.
 
 **PlanGuard** runs on every draft and before `submit`:
 
@@ -223,72 +547,61 @@ title prefixes, estimates rounded up to the team's scale, and lists cleaned up.
 - dependencies exist and have no cycles;
 - on each table, expand and contract happens in order: migration, dual write, backfill,
   switch, then cleanup. A migration that removes a column counts as cleanup;
-- a table the plan changes that no ticket touches is flagged.
+- a table the plan changes that no ticket touches is flagged, and so is a table no ticket
+  should touch.
 
 **PrGuard** runs on `review`, before `approve-pr` and again before `merge`:
 
-- the pull request stays within `max_pr_changed_lines`;
+- the pull request names the ticket and closes its issue;
+- it stays within `max_pr_changed_lines`;
 - it contains specs or features;
 - only migration and backfill tickets add migrations, and a new migration comes with a
   `db/schema.rb` change;
 - every acceptance criterion has a Cucumber scenario tagged with the ticket and the criterion,
   for example `@pd-1-t3 @ac-2`;
 - CI checks passed, with failures an error and pending checks a warning;
-- the pull request names the ticket and closes its issue.
+- the branch isn't behind the base branch, so CI ran against the code it will merge into.
 
 ## What the agent is told
 
-`plan-driven prompt PD-1/T3` prints the exact prompt. It contains the ticket, the parts of the
+`plan-driven prompt PD-1/T1` prints the exact prompt. It contains the ticket, the parts of the
 approved plan it needs, and the rules the pull request will be checked against afterwards:
 
 ```
-# Ticket PD-1/T3: Data migration: Backfill formable for existing forms
-Kind: backfill. Type: TASK.
+# Ticket PD-1/T1: Migration: Create rsvps table
 ...
 # Definition of done
 - Specs cover the change (spec/, test/, features/), and the existing suite still passes.
-- Every acceptance criterion has a Cucumber scenario in
-  `features/pd-1-polymorphic-form-ownership/t3.feature`. Tag the feature `@pd-1-t3` and each
-  scenario `@ac-N`, where N is the criterion's number above.
+- Every acceptance criterion has a Cucumber scenario in `features/pd-1-rsvps-with-a-waitlist/t1.feature`.
+  Tag the feature `@pd-1-t1` and each scenario `@ac-N`, where N is the criterion's number above.
+- If the app has no Cucumber setup yet, add `cucumber-rails` to the test group and run
+  `bin/rails generate cucumber:install` in this pull request.
 - Keep the change within 800 changed lines.
 
 # Rules
-- Schema changes only in migration tickets; this ticket is a backfill ticket.
+- Follow the conventions already used in this codebase.
+- Schema changes only in migration tickets; this ticket is a migration ticket.
 - Migrations are additive and reversible. Never remove or rename a column that code still reads.
 - Don't edit files under docs/plans; they are the approved plan.
-- Service objects live in app/services and respond to .call.      ← config.team_rules
+- Views are ERB and reuse the classes in app/assets/stylesheets/application.css ...   ← config.team_rules
+- bin/rubocop, bundle exec rspec and bundle exec cucumber must pass; CI runs all three.
 
 # Pull request
-Title it exactly: [PD-1/T3] Data migration: Backfill formable for existing forms
+Title it exactly: [PD-1/T1] Migration: Create rsvps table
+In the description include:
+- `PD-1/T1`
+- a line `Closes #3`
+- each acceptance criterion as a checklist, with the spec or scenario that proves it
 ```
-
-## Evidence and the delivery report
-
-```
-$ bundle exec plan-driven evidence PD-1
-Running cucumber --tags "@pd-1-t1 or @pd-1-t2 or @pd-1-t3 or @pd-1-t4 or @pd-1-t5"
-AC    Result  Criterion
-T1.1  passed  Forms table has nullable formable_type and formable_id columns
-T1.2  passed  Existing forms still load through business_process_id
-T3.2  passed  Running the backfill twice changes nothing the second time
-...
-✓ 7 of 7 acceptance criteria are proven by a passing scenario.
-
-$ bundle exec plan-driven report PD-1
-```
-
-`evidence` runs the plan's scenarios and stores the result with the commit it ran on.
-`--from cucumber.json` imports a run from CI instead. The delivery report lists each ticket
-with its pull request, merge commit and approver, then the acceptance criteria with the
-scenario that proves each one, the guard findings, every approval and the full timeline.
-
-![The delivery report](docs/images/delivery-report.png)
 
 ## Commands
 
+Run them as `bin/plan-driven COMMAND` (or `bundle exec plan-driven COMMAND`). `PLAN` is a plan
+key such as `PD-1`, and `PLAN/TICKET` is a ticket such as `PD-1/T3`.
+
 | Command | What it does |
 | --- | --- |
-| `new TITLE` | Interview, then draft the plan from the answers and the schema |
+| `new TITLE` | Interview, then draft the plan from the answers, the schema and the code |
 | `list` | Every plan and its phase |
 | `show PLAN [--section KEY]` | Print the plan or one section |
 | `edit PLAN SECTION` | Edit a section in `$EDITOR` |
@@ -296,16 +609,16 @@ scenario that proves each one, the guard findings, every approval and the full t
 | `check PLAN` | Run the plan guards |
 | `submit PLAN` | Send the plan for approval; the guards must pass |
 | `approve PLAN [--as ROLE] [--note TEXT]` | Approve the current revision |
-| `reject PLAN --note TEXT` | Send the plan back to draft |
+| `reject PLAN --note TEXT [--as ROLE]` | Send the plan back to draft |
 | `pdf PLAN` | Write the plan as Markdown, HTML and PDF |
-| `tickets PLAN` | Draft tickets from the approved plan |
-| `approve-tickets PLAN` | Approve the tickets and create GitHub issues |
+| `tickets PLAN ["instruction"]` | Draft tickets from the approved plan, or redraft them |
+| `approve-tickets PLAN [--as ROLE]` | Approve the tickets and create GitHub issues |
 | `prompt PLAN/TICKET` | Show what the agent will be told |
 | `develop PLAN [TICKET...]` | Start agents for ready tickets |
-| `status PLAN` | Poll agents and pull requests |
+| `status PLAN` | Poll agents and pull requests, then show every ticket and the next step |
 | `review PLAN/TICKET` | Run the pull request guards |
-| `approve-pr PLAN/TICKET` | Approve the pull request; the guards must pass |
 | `feedback PLAN/TICKET "text"` | Send review feedback to the ticket's agent |
+| `approve-pr PLAN/TICKET [--note TEXT]` | Approve the pull request; the guards must pass |
 | `merge PLAN/TICKET` | Merge an approved pull request, after typing the ticket key |
 | `evidence PLAN [--from FILE]` | Run or import Cucumber results |
 | `report PLAN` | Write the delivery report |
@@ -313,68 +626,131 @@ scenario that proves each one, the guard findings, every approval and the full t
 | `configure` | Store keys in `~/.plan_driven/config` |
 | `doctor` | Check keys, repository, PDF browser and the Cursor connection |
 
-Who did something is taken from `PLAN_DRIVEN_ACTOR`, or from `git config user.name` and
-`user.email`. `--yes` skips confirmations, for scripts.
+Section keys for `show --section`, `edit` and `redraft`: `what`, `why`, `where`, `who`,
+`when`, `background`, `existing_data_structure`, `architecture`, `database_changes`,
+`application_changes`, `infrastructure_changes`, `out_of_scope`, `risks`, `performance`,
+`security`, `monitoring`, `outstanding_questions` and `testing`. `edit PLAN` without a section
+lists them.
+
+`--yes` skips confirmations, for scripts. `merge` still needs the ticket key typed unless
+`--yes` is given.
 
 ## Configuration
 
-Everything has a default. The generated initializer lists the settings:
+Everything has a default, so only keys are required. The generated initializer lists the
+settings you're most likely to change:
 
 ```ruby
 # config/initializers/plan_driven.rb
 PlanDriven.configure do |config|
-  config.llm_provider = :openai                 # or :anthropic, or :cursor
-  config.llm_model = "gpt-4.1"                  # default: gpt-4.1, claude-sonnet-4-5, claude-opus-5-5
+  # Drafting plans and tickets
+  config.llm_provider = :cursor                 # :openai (default), :anthropic or :cursor
+  config.llm_model = "claude-opus-5-5"          # default: gpt-4.1, claude-sonnet-4-5, claude-opus-5-5
   config.llm_api_base = nil                     # an OpenAI-compatible gateway
+  config.temperature = 0.2
+  config.request_timeout = 180                  # seconds per model call
+  config.max_repair_attempts = 2                # redrafts when a guard fails
   config.node_command = "node"                  # :cursor only; Node 22.13+ (or PLAN_DRIVEN_NODE)
+  config.cursor_sdk_path = nil                  # where @cursor/sdk is, if not ~/.plan_driven/node
 
-  config.plan_approvals = %w[review qa devops director]
+  # Approvals
+  config.plan_approvals = %w[review]            # e.g. %w[review qa devops director]
   config.ticket_approvals = %w[review]
 
-  config.agent_model = nil                      # the Cursor agent's model; nil uses your default
+  # Cursor cloud agents
+  config.agent_model = nil                      # nil uses your Cursor default
   config.base_branch = "main"
   config.max_parallel_agents = 3
+  config.skip_reviewer_request = false          # true: the agent doesn't request you as reviewer
 
-  config.github_repository = nil                # read from the origin remote when nil
+  # GitHub
+  config.github_repository = nil                # "owner/name"; read from the origin remote when nil
   config.sync_issues = true
-  config.merge_method = "squash"
+  config.issue_labels = %w[plan-driven]         # plus the plan key and the ticket kind
+  config.merge_method = "squash"                # or "merge", "rebase"
 
+  # Guards
   config.estimate_scale = [1, 2, 3, 5, 8]
   config.max_estimate = 5
   config.max_pr_changed_lines = 800
   config.require_specs_in_pr = true
+  config.spec_paths = %w[spec/ test/ features/]
   config.cucumber = true
+  config.features_path = "features"
 
+  # What the model and the agents should know
   config.team_rules = ["Authorization goes through Pundit policies, never in controllers."]
   config.extra_context = "Tenancy is by Account; every table has account_id."
+
+  # Output
   config.docs_path = "docs/plans"
+  config.pdf_renderer = nil                     # a callable (html_path, pdf_path); nil uses Chrome
 end
 ```
 
-Planning is where a stronger model pays for itself, so the defaults are GPT-4.1 and Claude
-Sonnet rather than their mini versions. A plan costs a few cents.
+`llm_provider :cursor` drafts with any model on your Cursor account through the
+[Cursor SDK](https://cursor.com/docs/sdk/typescript). The agent runs on your machine with
+read-only tools (read, grep, glob, ls), so it reads the application's code while it writes the
+plan and can't change a file.
 
-`llm_provider :cursor` drafts with any model on your Cursor account (Claude Opus by default)
-through the [Cursor SDK](https://cursor.com/docs/sdk/typescript), with no other LLM key. The
-agent runs on your machine with read-only tools (read, grep, glob, ls), so it reads the
-application's code while it writes the plan and can't change a file. It needs Node 22.13+ and
-the SDK: `npm install --prefix ~/.plan_driven/node @cursor/sdk`. `plan-driven doctor` checks both.
-
-`config.template` replaces
-the plan's sections if your template differs, and `config.pdf_renderer` takes any callable
-`(html_path, pdf_path)` if you'd rather not use Chrome.
+`config.template` replaces the plan's sections if your template differs.
 
 ## Keys
 
 | Key | Used for | Environment |
 | --- | --- | --- |
-| `openai_api_key` or `anthropic_api_key` | drafting plans and tickets | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` |
 | `cursor_api_key` | cloud agents, and drafting with `llm_provider :cursor` (Cursor dashboard, Integrations) | `CURSOR_API_KEY` |
-| `github_token` | issues, pull requests, checks, merge | `GITHUB_TOKEN`, or `gh auth token` |
+| `github_token` | issues, pull requests, reviews, checks, merge | `GITHUB_TOKEN`, or `gh auth token` |
+| `openai_api_key` or `anthropic_api_key` | drafting with `:openai` or `:anthropic` | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` |
+
+A fine-grained GitHub token needs, on the application's repository: Contents, Issues and Pull
+requests (read and write), Checks and Commit statuses (read), and Metadata (read).
 
 Keys are read from the environment first, then from `~/.plan_driven/config` (mode 0600 in a
 0700 directory), which `plan-driven configure` writes. A key from the environment is never
 copied to disk, and no key is ever written into your application or its configuration.
+
+## Working as a team
+
+The plan's state lives in the database of whoever runs the commands, and its documents live in
+`docs/plans/`. Most teams have one person drive a plan (a lead or the feature's owner) and
+commit `docs/plans/` so everyone reads the same plan, tickets and report in the repository and
+on GitHub.
+
+Approvals and every other action are recorded with who did them, taken from
+`PLAN_DRIVEN_ACTOR` or from `git config user.name` and `user.email`. To record a colleague's
+sign-off from the driver's machine:
+
+```bash
+PLAN_DRIVEN_ACTOR="Petra Novak <petra@example.com>" bin/plan-driven approve PD-1 --as qa --note "Test plan is fine"
+```
+
+`log PD-1` prints the full audit trail, and the delivery report includes it.
+
+## Troubleshooting
+
+**`cursor: no answer within 180s`.** Large models can take a few minutes on a full plan. Raise
+`config.request_timeout`, for example to 600.
+
+**`doctor` says the Cursor SDK is missing, or Node is too old.** Install the SDK with
+`npm install --prefix ~/.plan_driven/node @cursor/sdk`, and point `config.node_command` or
+`PLAN_DRIVEN_NODE` at Node 22.13 or newer.
+
+**The agent can't open the repository.** Connect GitHub in the Cursor dashboard and give it
+access to the application's repository. The agents clone it and push their branches there.
+
+**`review` says the branch is behind main.** CI ran without the latest merges. Send
+`feedback` asking the agent to merge main and run the checks again, then review once CI is
+green.
+
+**`review` finds a missing scenario.** The criterion needs a scenario tagged `@pd-1-tN @ac-M`
+in `features/<plan>/tN.feature`. Send `feedback` naming the criterion.
+
+**No PDF.** Install Google Chrome or Chromium, or set `config.pdf_renderer`. The Markdown and
+HTML versions are always written.
+
+**Names or answers look garbled.** Run the commands under a UTF-8 locale
+(`LANG=en_US.UTF-8`).
 
 ## Rails and Ruby support
 
@@ -388,7 +764,8 @@ Ruby 3.1 or newer and Rails 7.0 or newer. CI runs the suite on every supported c
 | Ruby 3.4 | | | ✓ | ✓ | ✓ |
 
 The OpenAI, Anthropic, Cursor and GitHub APIs are called over `net/http`, so the gem depends
-on nothing beyond Rails.
+on nothing beyond Rails. `:cursor` drafting also needs Node and `@cursor/sdk`, outside your
+bundle.
 
 ## Development
 
@@ -429,7 +806,7 @@ security issues privately as described in [SECURITY.md](SECURITY.md).
 
 `plan_driven` is written and maintained by [Rubycode](https://rubycode.co). We build and rescue
 Ruby on Rails products: new applications, upgrades, performance work, and senior Ruby and Rails
-engineers who join your team.
+engineers who join your team. We also help teams put AI agents to work safely.
 
 **Need Ruby or Ruby on Rails engineers? Get in touch.**
 
