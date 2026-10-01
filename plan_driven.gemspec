@@ -8,11 +8,12 @@ Gem::Specification.new do |spec|
   spec.authors = ["Ivan Blažević"]
   spec.email = ["ivan.blazevic@rubycode.co"]
 
-  spec.summary = "From implementation plan to merged, tested pull requests, driven from the terminal."
+  spec.summary = "From implementation plan to merged, tested pull requests, driven from the browser or the terminal."
   spec.description = <<~DESC
-    plan_driven runs a Rails team's delivery process from the command line. A terminal interview
-    turns an idea into an implementation plan grounded in your real schema; the plan is checked
-    by guards written in Ruby, rendered to PDF and approved. Approved plans become tickets, each
+    plan_driven runs a Rails team's delivery process inside your Rails app, from a browser wizard
+    or the command line: every button in the wizard runs the same plan-driven command. A short
+    interview turns an idea into an implementation plan grounded in your real schema; the plan
+    is checked by guards written in Ruby, rendered to PDF and approved. Approved plans become tickets, each
     ticket is handed to a Cursor cloud agent that opens a pull request, and only pull requests
     you approve are merged. Acceptance criteria map to Cucumber scenarios, and every phase leaves
     documentation behind: the plan, the tickets, the pull requests and a delivery report.

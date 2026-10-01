@@ -6,11 +6,16 @@
 [![Ruby](https://img.shields.io/badge/Ruby-3.1%20to%203.4-CC342D.svg)](#rails-and-ruby-support)
 [![Rails](https://img.shields.io/badge/Rails-7.0%20to%208.1-D30001.svg)](#rails-and-ruby-support)
 
-**From implementation plan to merged, tested pull requests, driven from the terminal.**
+**From implementation plan to merged, tested pull requests, driven from the browser or the terminal.**
 
-`plan_driven` runs a Rails team's delivery process from the command line, with AI agents doing
-the writing and your team making the decisions. A short interview in the terminal becomes an
-implementation plan grounded in your real schema and code. Guards written in Ruby check the
+`plan_driven` runs a Rails team's delivery process inside your Rails app, with AI agents doing
+the writing and your team making the decisions. Drive it the way you prefer: click through the
+[wizard in the browser](#the-browser-wizard), mounted at `/plan_driven` in development, or type
+the same steps in the [terminal](#commands). Every button in the wizard runs one `plan-driven`
+command and shows it to you, so both are the same process, with the same rules and the same
+audit trail, and you can switch between them at any step.
+
+A short interview becomes an implementation plan grounded in your real schema and code. Guards written in Ruby check the
 plan, you read it and approve it. The approved plan becomes tickets, each ticket goes to a
 Cursor cloud agent that opens a pull request, and only the pull requests you approve are
 merged. Acceptance criteria map to Cucumber scenarios, so the delivery report shows which
