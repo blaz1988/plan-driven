@@ -28,8 +28,8 @@ module PlanDriven
 
     # Coding agents: :cursor (Cursor cloud agents), or :local to run a command such as Claude Code
     # or Codex on this machine, one git worktree per ticket (see LocalAgents).
-    attr_accessor :agent_provider, :agent_command, :agent_model, :base_branch, :max_parallel_agents,
-                  :skip_reviewer_request, :agent_timeout
+    attr_accessor :agent_provider, :agent_command, :agent_model, :base_branch, :skip_reviewer_request,
+                  :agent_timeout
 
     # Dollars per million tokens, by model id, for the cost in the delivery report (see Usage).
     attr_accessor :token_prices
@@ -38,8 +38,18 @@ module PlanDriven
     attr_accessor :github_repository, :sync_issues, :merge_method, :issue_labels
 
     # Guards.
-    attr_accessor :estimate_scale, :max_estimate, :max_pr_changed_lines, :require_specs_in_pr,
-                  :spec_paths, :cucumber, :features_path
+    attr_accessor :estimate_scale, :spec_paths, :features_path
+
+    # How the work is split and checked: ticket_split, max_tickets, max_estimate,
+    # separate_migrations, max_pr_changed_lines, require_specs_in_pr, cucumber, targeted_tests and
+    # max_parallel_agents (see Settings). The team's choices in config/plan_driven/settings.yml
+    # win over what the initializer sets.
+    attr_writer(*Settings.keys)
+
+    Settings::OPTIONS.each do |option|
+      name = option.key
+      define_method(name) { settings.fetch(name) { instance_variable_get("@#{name}") } }
+    end
 
     # Extra rules appended to every agent prompt: your team's conventions, in plain English.
     attr_accessor :team_rules
@@ -66,6 +76,22 @@ module PlanDriven
         @interview_stamp = stamp
       end
       @interview_template
+    end
+
+    # The values in config/plan_driven/settings.yml, read again when the file changes.
+    def settings
+      file = Settings.path(root_path)
+      stamp = [file.to_s, file.exist? && file.mtime]
+      unless @settings_stamp == stamp
+        @settings = Settings.read(root_path)
+        @settings_stamp = stamp
+      end
+      @settings
+    end
+
+    # What the initializer (or the gem's default) sets, without the settings file.
+    def initializer_value(name)
+      instance_variable_get("@#{Settings.find(name).key}")
     end
 
     # The template as the initializer set it, before the interview changes.
@@ -106,12 +132,17 @@ module PlanDriven
       @issue_labels = %w[plan-driven]
 
       @estimate_scale = [1, 2, 3, 5, 8]
+      @spec_paths = %w[spec/ test/ features/]
+      @features_path = "features"
+
+      @ticket_split = "small"
+      @max_tickets = nil
       @max_estimate = 5
+      @separate_migrations = true
       @max_pr_changed_lines = 800
       @require_specs_in_pr = true
-      @spec_paths = %w[spec/ test/ features/]
       @cucumber = true
-      @features_path = "features"
+      @targeted_tests = true
 
       @team_rules = []
       @pdf_renderer = nil

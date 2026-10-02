@@ -324,7 +324,7 @@ the audit trail is the same either way. A few things to know:
 
 ### Configuration: connections and the interview
 
-**Configuration**, at the top of every page, has two parts.
+**Configuration**, at the top of every page, has three parts.
 
 **Connections** shows which services this app's configuration uses (Cursor for cloud agents
 or drafting, OpenAI or Anthropic for drafting, GitHub for issues and pull requests), whether
@@ -357,6 +357,39 @@ The changes are written to `config/plan_driven/interview.yml` in your app. Commi
 whole team gets the same interview, in the wizard and in the terminal. An added question goes
 to the model with the other answers, and it's a section of the plan under the group you pick.
 Drafted sections (Database changes, Risks...) belong to the model and can't be changed here.
+
+**Tickets and pull requests** holds the choices that change how work is split and checked. Every
+option starts at the recommended Rails practice, and each one explains what changing it trades
+off, mostly fewer pull requests and tokens against bigger reviews:
+
+| Setting | Recommended | What it decides |
+| --- | --- | --- |
+| `ticket_split` | `small` | One user-visible behaviour per ticket, or related behaviours together (`larger`) |
+| `max_tickets` | no limit | At most this many tickets per plan |
+| `max_estimate` | `5` | The largest ticket, in story points |
+| `separate_migrations` | on | Schema changes in their own pull requests, deployed before the code |
+| `max_pr_changed_lines` | `800` | The largest pull request the guard accepts |
+| `require_specs_in_pr` | on | Every code pull request changes specs or features |
+| `cucumber` | on | Every acceptance criterion is proved by a scenario |
+| `targeted_tests` | on | Agents run only the specs they need while working, the whole suite once at the end |
+| `max_parallel_agents` | `3` | Agents working at the same time |
+
+With `separate_migrations` off, an additive migration goes in the pull request of the first code
+that needs it; removing or renaming a column still gets its own cleanup ticket. Each Save runs
+`plan-driven setting`:
+
+```
+$ bin/plan-driven setting separate_migrations off
+✓ separate_migrations: off
+  Off saves a pull request and an agent run for each migration, but the code and the schema
+  change ship together, so a rollback undoes both.
+$ bin/plan-driven setting separate_migrations --default
+✓ separate_migrations is back to on
+```
+
+The choices are written to `config/plan_driven/settings.yml`, which wins over the initializer.
+Commit it so the whole team plans and reviews the same way. `plan-driven settings` lists every
+option, its value, and where the value comes from.
 
 ## Walkthrough: one feature from idea to merged
 
@@ -815,6 +848,8 @@ key such as `PD-1`, and `PLAN/TICKET` is a ticket such as `PD-1/T3`.
 | `stats PLAN` | Where the time went: phases, agents and people, each ticket |
 | `questions` | The interview's questions, and which ones the team changed or added |
 | `question KEY [--title T] [--ask Q] [--group G] [--required \| --optional] [--remove]` | Change or add an interview question, or put it back |
+| `settings` | How tickets and pull requests are split and checked, and where each value comes from |
+| `setting KEY VALUE [--default]` | Change a setting, or put it back |
 | `configure` | Store keys in `~/.plan_driven/config` |
 | `connect SERVICE` | Check a key with `cursor`, `openai`, `anthropic` or `github`, then store it |
 | `doctor` | Check keys, repository, PDF browser, and the Cursor connection or local agent command |
@@ -876,6 +911,10 @@ PlanDriven.configure do |config|
   config.spec_paths = %w[spec/ test/ features/]
   config.cucumber = true
   config.features_path = "features"
+  config.ticket_split = "small"                 # or "larger"
+  config.max_tickets = nil                      # nil: no limit
+  config.separate_migrations = true
+  config.targeted_tests = true
 
   # What the model and the agents should know
   config.team_rules = ["Authorization goes through Pundit policies, never in controllers."]
@@ -891,6 +930,10 @@ end
 [Cursor SDK](https://cursor.com/docs/sdk/typescript). The agent runs on your machine with
 read-only tools (read, grep, glob, ls), so it reads the application's code while it writes the
 plan and can't change a file.
+
+The settings on the Configuration page (`ticket_split` to `max_parallel_agents`, see
+[Configuration: connections and the interview](#configuration-connections-and-the-interview))
+can be set here too; `config/plan_driven/settings.yml` wins over the initializer.
 
 `config.template` replaces the plan's sections if your template differs.
 

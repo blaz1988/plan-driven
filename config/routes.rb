@@ -11,6 +11,7 @@ PlanDriven::Wizard::Engine.routes.draw do
   post "actor", to: "plans#actor", as: :actor
   get "configuration", to: "configuration#show", as: :configuration
   post "configuration/question", to: "configuration#question", as: :configuration_question
+  post "configuration/setting", to: "configuration#setting", as: :configuration_setting
   post "configuration/connect", to: "configuration#connect", as: :configuration_connect
   post "configuration/check", to: "configuration#check", as: :configuration_check
   get "jobs/:id", to: "jobs#show", as: :job

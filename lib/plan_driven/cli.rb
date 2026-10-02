@@ -44,6 +44,8 @@ module PlanDriven
       "stats" => ["PLAN", "Where the time went: phases, agents and people, each ticket"],
       "questions" => ["", "The interview's questions, with the team's changes"],
       "question" => ["KEY", "Change or add a question (--title, --ask, --group, --required, --optional, --remove)"],
+      "settings" => ["", "How tickets are split and checked, and what each option trades off"],
+      "setting" => ["KEY VALUE", "Change a setting, or put it back with --default"],
       "configure" => ["", "Store API keys in ~/.plan_driven/config"],
       "connect" => ["SERVICE", "Check a key with cursor, openai, anthropic or github, then store it"],
       "doctor" => ["", "Check keys, repository and connections"]
@@ -128,6 +130,7 @@ module PlanDriven
       parser.on("--required") { options[:required] = true }
       parser.on("--optional") { options[:required] = false }
       parser.on("--remove") { options[:remove] = true }
+      parser.on("--default") { options[:default] = true }
     end
 
     def boot_application

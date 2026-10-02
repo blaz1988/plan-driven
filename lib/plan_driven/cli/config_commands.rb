@@ -26,6 +26,32 @@ module PlanDriven
         cmd_questions
       end
 
+      def cmd_settings
+        config = PlanDriven.configuration
+        ui.table(%w[Setting Value Source Recommended], Settings::OPTIONS.map do |option|
+          [option.key, Settings.label(config.public_send(option.key)), Settings.origin(option.key, config: config),
+           Settings.label(Settings.recommended(option.key))]
+        end)
+        ui.muted "Changes are in #{Settings::PATH}; commit it so the team works the same way. " \
+                 "`plan-driven setting KEY VALUE` changes one."
+      end
+
+      def cmd_setting(key = nil, value = nil)
+        raise ArgumentError, "Which setting? Pass its key, for example separate_migrations." if key.to_s.empty?
+
+        option = Settings.find(key)
+        if @options[:default]
+          Settings.reset(option.key)
+          ui.success "#{option.key} is back to #{Settings.label(PlanDriven.configuration.public_send(option.key))}"
+        else
+          raise ArgumentError, "Pass a value for #{option.key}, or --default." if value.nil?
+
+          ui.success "#{option.key}: #{Settings.label(Settings.change(option.key, value))}"
+        end
+        ui.muted "  #{option.tradeoff}"
+        cmd_settings
+      end
+
       def cmd_connect(name = nil)
         service = Connections.find(name)
         ui.muted "#{service.title}: #{service.purpose}. Get a key at #{service.url}"

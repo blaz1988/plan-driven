@@ -15,6 +15,27 @@ RSpec.describe PlanDriven::Guards::TicketGuard do
     expect(report.warnings).to eq([])
   end
 
+  describe "settings" do
+    it "keeps the breakdown within max_tickets" do
+      PlanDriven.configuration.max_tickets = normalized_tickets.size - 1
+      expect(check(normalized_tickets).errors)
+        .to include(a_string_matching(/#{normalized_tickets.size} tickets, above the limit of #{normalized_tickets.size - 1}/))
+    end
+
+    it "lets a ticket grow to the top of the scale when tickets are split larger" do
+      expect(check(with("T3", "estimate" => 8)).errors).to include(a_string_matching(/T3 is estimated at 8.*split it/))
+      PlanDriven.configuration.ticket_split = "larger"
+      expect(check(with("T3", "estimate" => 8)).errors).to eq([])
+    end
+
+    it "only warns about a big ticket under max_tickets" do
+      PlanDriven.configuration.max_tickets = 10
+      report = check(with("T3", "estimate" => 8))
+      expect(report.errors).to eq([])
+      expect(report.warnings).to include("T3 is estimated at 8, above 5; kept whole to stay within 10 tickets")
+    end
+  end
+
   it "rejects an empty breakdown" do
     expect(check([]).errors).to eq(["There are no tickets"])
   end

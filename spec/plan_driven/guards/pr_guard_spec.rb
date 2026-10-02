@@ -68,6 +68,16 @@ RSpec.describe PlanDriven::Guards::PrGuard do
     expect(report.errors).to include(a_string_matching(/A dual_write ticket adds a migration/))
   end
 
+  it "accepts a migration in a code ticket when separate_migrations is off" do
+    PlanDriven.configuration.separate_migrations = false
+    code = plan.ticket!("T2")
+    code.update!(issue_number: nil)
+    report = described_class.new(code, pull: { "title" => "#{plan.key}/T2" }, files: files, checks: checks,
+                                       features: { "f.feature" => feature_for(code) }).call
+    expect(report.errors).to eq([])
+    expect(report.passes).to include("Adds 1 migration(s) with the code that needs them (separate_migrations is off)")
+  end
+
   it "warns when a migration ticket also changes application code" do
     migration = plan.ticket!("T1")
     changed = files + [{ "filename" => "app/models/form.rb", "status" => "modified", "additions" => 2,

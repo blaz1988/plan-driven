@@ -65,11 +65,10 @@ module PlanDriven
 
         Order the work the way zero-downtime Rails changes ship: migrations that add, dual
         writes, backfills, switching reads, then cleanup that removes. A ticket may only depend
-        on tickets before it. Keep tickets small: at most #{@config.max_estimate} points on the
-        scale #{@config.estimate_scale.join(", ")}. Schema changes get their own migration tickets.
-        Split code by behaviour, not by layer: each code ticket delivers one thing a user can do,
-        with its model, service, controller, view and specs together, so its acceptance criteria
-        can be proven by Cucumber scenarios.
+        on tickets before it. #{size_rule} #{migration_rule}
+        Split code by behaviour, not by layer: each code ticket delivers #{behaviour_rule}, with its
+        model, service, controller, view and specs together, so its acceptance criteria can be
+        proven by Cucumber scenarios.#{count_rule}
 
         Reply with one JSON object: {"tickets": [ ... ]}. Each ticket has:
         #{FIELDS}
@@ -77,6 +76,35 @@ module PlanDriven
     end
 
     private
+
+    def size_rule
+      scale = @config.estimate_scale
+      return "Keep tickets small: at most #{@config.max_estimate} points on the scale #{scale.join(", ")}." if small?
+
+      "Group related behaviours into one ticket, up to #{scale.max} points on the scale #{scale.join(", ")}, " \
+        "so the plan needs as few pull requests as it can."
+    end
+
+    def migration_rule
+      return "Schema changes get their own migration tickets." if @config.separate_migrations
+
+      "Put each additive schema change in the same ticket as the first code that needs it, as a migration in " \
+        "that pull request. Removing or renaming a column still gets its own cleanup ticket, after everything " \
+        "that stops using it."
+    end
+
+    def behaviour_rule
+      small? ? "one thing a user can do" : "a group of related things a user can do"
+    end
+
+    def count_rule
+      limit = @config.max_tickets
+      limit ? "\nUse at most #{limit} ticket#{"s" unless limit == 1} for the whole plan." : ""
+    end
+
+    def small?
+      @config.ticket_split != "larger"
+    end
 
     def request(plan)
       sections = plan.sections.map { |key, value| "## #{@config.template[key]&.title || key}\n#{value}" }

@@ -19,6 +19,13 @@ module PlanDriven
         redirect_to configuration_path(anchor: "questions"), alert: e.message
       end
 
+      def setting
+        job = start(Commands.argv("setting", params.permit(:key, :value, :default).to_h))
+        redirect_to configuration_path(job: job.id, anchor: "setting_#{params[:key]}")
+      rescue ArgumentError => e
+        redirect_to configuration_path(anchor: "settings"), alert: e.message
+      end
+
       def connect
         service = Connections.find(params[:service])
         key = params[:api_key].to_s.strip
@@ -30,9 +37,12 @@ module PlanDriven
         redirect_to configuration_path(anchor: "connections"), alert: e.message
       end
 
+      CHECKS = { "questions" => "questions", "settings" => "settings" }.freeze
+
       def check
-        job = start(Commands.argv(params[:do] == "questions" ? "questions" : "doctor", {}))
-        redirect_to configuration_path(job: job.id, anchor: params[:do] == "questions" ? "questions" : "connections")
+        command = CHECKS.fetch(params[:do].to_s, "doctor")
+        job = start(Commands.argv(command, {}))
+        redirect_to configuration_path(job: job.id, anchor: command == "doctor" ? "connections" : command)
       end
 
       private

@@ -30,7 +30,10 @@ if defined?(PlanDriven.configure)
     # config.sync_issues = true
     # config.merge_method = "squash"
 
-    # Guards.
+    # Guards. How tickets are split and checked can also be chosen on the wizard's Configuration
+    # page; those choices go to config/plan_driven/settings.yml and win over these.
+    # config.ticket_split = "small"          # or "larger": fewer, bigger tickets
+    # config.separate_migrations = true      # false: additive migrations ship with their code
     # config.estimate_scale = [1, 2, 3, 5, 8]
     # config.max_estimate = 5
     # config.max_pr_changed_lines = 800

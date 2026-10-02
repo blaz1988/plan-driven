@@ -52,6 +52,10 @@ module PlanDriven
     def done_block
       lines = ["# Definition of done"]
       lines << "- Specs cover the change (#{@config.spec_paths.join(", ")}), and the existing suite still passes."
+      if @config.targeted_tests
+        lines << "- While you work, run only the specs and features for the files you change. Run the whole " \
+                 "suite once, before you open the pull request."
+      end
       if @config.cucumber && @ticket.kind != "docs"
         lines << "- Every acceptance criterion has a Cucumber scenario in " \
                  "`#{@config.features_path}/#{@plan.slug}/#{@ticket.key.downcase}.feature`. Tag the feature " \
@@ -65,11 +69,19 @@ module PlanDriven
 
     def rules_block
       rules = ["Follow the conventions already used in this codebase.",
-               "Schema changes only in migration tickets; this ticket is a #{@ticket.kind} ticket.",
+               migration_rule,
                "Migrations are additive and reversible. Never remove or rename a column that code still reads.",
                "Don't edit files under #{@config.docs_path}; they are the approved plan.",
                *@config.team_rules]
       "# Rules\n#{rules.map { |rule| "- #{rule}" }.join("\n")}"
+    end
+
+    def migration_rule
+      if @config.separate_migrations || %w[migration backfill].include?(@ticket.kind)
+        "Schema changes only in migration tickets; this ticket is a #{@ticket.kind} ticket."
+      else
+        "If this ticket needs a schema change, add it as a migration in this pull request, with db/schema.rb."
+      end
     end
 
     def pr_block

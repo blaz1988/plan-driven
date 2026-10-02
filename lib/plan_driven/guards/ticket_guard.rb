@@ -23,6 +23,7 @@ module PlanDriven
           return report
         end
 
+        check_count(report)
         @tickets.each { |ticket| check_ticket(ticket, report) }
         check_slicing(report)
         check_dependencies(report)
@@ -32,6 +33,14 @@ module PlanDriven
       end
 
       private
+
+      def check_count(report)
+        limit = @config.max_tickets
+        return unless limit && @tickets.size > limit
+
+        report.error("There are #{@tickets.size} tickets, above the limit of #{limit} (max_tickets); " \
+                     "combine related tickets")
+      end
 
       # A model ticket, then a controller ticket, then a view ticket: none of them does anything
       # a user can see, so no scenario can prove its criteria.
@@ -70,12 +79,18 @@ module PlanDriven
         report.warning("#{label} has #{criteria.size} acceptance criteria; consider splitting it")
       end
 
+      # With ticket_split larger the limit is the top of the scale. Under max_tickets the breakdown
+      # can't always split a big ticket, so going over the limit is only a warning.
       def check_estimate(ticket, label, report)
         estimate = ticket["estimate"]
+        limit = @config.ticket_split == "larger" ? @config.estimate_scale.max : @config.max_estimate
         if estimate.nil?
           report.error("#{label} has no estimate")
-        elsif estimate > @config.max_estimate
-          report.error("#{label} is estimated at #{estimate}, above the limit of #{@config.max_estimate}; split it")
+        elsif estimate > limit && @config.max_tickets
+          report.warning("#{label} is estimated at #{estimate}, above #{limit}; kept whole to stay within " \
+                         "#{@config.max_tickets} tickets")
+        elsif estimate > limit
+          report.error("#{label} is estimated at #{estimate}, above the limit of #{limit}; split it")
         end
       end
 

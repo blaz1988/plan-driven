@@ -31,6 +31,11 @@ RSpec.describe PlanDriven::Wizard do
         .to eq(["question", "metric", "--title", "Metric", "--ask", "Which number?", "--group", "Risks", "--optional",
                 "--yes"])
       expect(argv("question", key: "metric", remove: "1")).to eq(%w[question metric --remove --yes])
+      expect(argv("settings")).to eq(%w[settings --yes])
+      expect(argv("setting", key: "separate_migrations", value: "off")).to eq(%w[setting separate_migrations off --yes])
+      expect(argv("setting", key: "max_tickets", value: " ")).to eq(%w[setting max_tickets none --yes])
+      expect(argv("setting", key: "cucumber", default: "1")).to eq(%w[setting cucumber --default --yes])
+      expect { argv("setting", key: "llm_model", value: "x") }.to raise_error(ArgumentError, /Unknown setting/)
       expect(argv("connect", service: "Cursor", api_key: "key_secret")).to eq(%w[connect cursor --yes])
       expect { argv("question", key: "who --remove") }.to raise_error(ArgumentError, "not a question key")
       expect { argv("connect", service: "slack") }.to raise_error(ArgumentError, /Connect what/)

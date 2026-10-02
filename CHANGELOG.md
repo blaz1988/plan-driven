@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Settings on the wizard's Configuration page, and `plan-driven settings` / `plan-driven setting`:
+  how finely tickets are split (`ticket_split`, `max_tickets`, `max_estimate`), whether schema
+  changes get their own pull requests (`separate_migrations`), pull request size, specs and
+  Cucumber proof, whether agents run only the specs they need while working (`targeted_tests`),
+  and how many agents work at once. Each starts at the recommended practice and explains its
+  trade-off. The choices are written to `config/plan_driven/settings.yml`, which wins over the
+  initializer.
+
 ## [0.3.0] - 2026-10-01
 
 ### Added

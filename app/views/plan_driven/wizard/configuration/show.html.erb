@@ -47,6 +47,53 @@
   the panel or the logs. A key in the environment always wins.</p>
 <%= button_to "Check every connection", configuration_check_path(do: "doctor"), form: { style: "display:inline" } %>
 
+<h2 id="settings">Tickets and pull requests</h2>
+<p class="muted">How the plan is split into tickets, and what every pull request has to pass. Each default is the
+  practice we recommend; change one when the trade-off suits your team. Changes are written to
+  <code><%= PlanDriven::Settings::PATH %></code> and win over the initializer; commit it so the whole team works the same way.</p>
+
+<% PlanDriven::Settings::OPTIONS.group_by(&:group).each do |group, options| %>
+  <h3><%= group %></h3>
+  <% options.each do |option| %>
+    <% value = config.public_send(option.key) %>
+    <% origin = PlanDriven::Settings.origin(option.key, config: config) %>
+    <% recommended = PlanDriven::Settings.recommended(option.key) %>
+    <div class="card setting" id="setting_<%= option.key %>">
+      <%= form_with url: configuration_setting_path, method: :post do %>
+        <%= hidden_field_tag :key, option.key, id: nil %>
+        <div class="row" style="justify-content:space-between">
+          <span><strong><%= option.title %></strong> <code><%= option.key %></code>
+            <span class="pill <%= value == recommended ? "good" : "wait" %>">
+              <%= value == recommended ? "recommended" : "recommended: #{PlanDriven::Settings.label(recommended)}" %></span>
+            <% unless origin == "default" %><span class="pill"><%= origin %></span><% end %></span>
+          <span class="row">
+            <% case option.type %>
+            <% when :boolean %>
+              <%= select_tag :value, options_for_select([%w[on on], %w[off off]], PlanDriven::Settings.label(value)),
+                             id: "value_#{option.key}", "aria-label": option.title %>
+            <% when :choice %>
+              <%= select_tag :value, options_for_select(option.choices, value), id: "value_#{option.key}",
+                             "aria-label": option.title %>
+            <% else %>
+              <%= number_field_tag :value, value, min: option.minimum, id: "value_#{option.key}", style: "width:110px",
+                                   placeholder: (option.blank ? "no limit" : nil), "aria-label": option.title %>
+            <% end %>
+            <button type="submit">Save</button>
+            <% if origin == "settings" %>
+              <% initial = config.initializer_value(option.key) %>
+              <button type="submit" name="default" value="1">Back to
+                <%= initial == recommended ? "recommended" : "the initializer's #{PlanDriven::Settings.label(initial)}" %></button>
+            <% end %>
+          </span>
+        </div>
+        <p style="margin:8px 0 4px"><%= option.explanation %></p>
+        <p class="muted" style="margin:0;font-size:13px"><strong>Trade-off:</strong> <%= option.tradeoff %></p>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>
+<%= button_to "List the settings", configuration_check_path(do: "settings"), form: { style: "display:inline" } %>
+
 <h2 id="questions">Interview questions</h2>
 <p class="muted">What <code>plan-driven new</code> and the New plan form ask. Changes are written to
   <code><%= PlanDriven::Interview::PATH %></code>; commit it so the whole team gets the same interview. A new required question

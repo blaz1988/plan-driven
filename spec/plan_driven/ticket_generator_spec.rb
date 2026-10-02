@@ -22,6 +22,24 @@ RSpec.describe PlanDriven::TicketGenerator do
     expect(llm.calls.first[:system].squish).to include("at most 5 points on the scale 1, 2, 3, 5, 8")
   end
 
+  it "asks for the breakdown the settings choose" do
+    llm = FakeLLM.new(tickets_reply)
+    generate(llm)
+    expect(llm.calls.first[:system].squish).to include("Schema changes get their own migration tickets",
+                                                       "each code ticket delivers one thing a user can do")
+    expect(llm.calls.first[:system]).not_to include("at most 2 tickets")
+
+    config = PlanDriven.configuration
+    config.ticket_split = "larger"
+    config.separate_migrations = false
+    config.max_tickets = 2
+    system = described_class.new(llm: llm, schema: schema).system_prompt.squish
+    expect(system).to include("Group related behaviours into one ticket, up to 8 points",
+                              "same ticket as the first code that needs it",
+                              "Removing or renaming a column still gets its own cleanup ticket",
+                              "a group of related things a user can do", "Use at most 2 tickets for the whole plan.")
+  end
+
   it "repairs a breakdown that violates expand and contract" do
     wrong = { "tickets" => Fixtures::TICKETS.map { |t| t["key"] == "T2" ? t.merge("depends_on" => []) : t } }
     llm = FakeLLM.new(wrong, tickets_reply)

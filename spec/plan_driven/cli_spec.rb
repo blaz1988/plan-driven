@@ -204,6 +204,21 @@ RSpec.describe PlanDriven::CLI do
                                                                 "only asked questions can be changed\n"])
   end
 
+  it "lists and changes the settings, and says what a change trades off" do
+    status, text = run("settings")
+    expect(status).to eq(0)
+    expect(text).to include("separate_migrations", "default", PlanDriven::Settings::PATH)
+
+    status, text = run("setting", "separate_migrations", "off", "--yes")
+    expect(status).to eq(0)
+    expect(text).to include("✓ separate_migrations: off", "a rollback undoes both")
+    expect(PlanDriven.configuration.separate_migrations).to be(false)
+
+    expect(run("setting", "separate_migrations", "--default").last).to include("separate_migrations is back to on")
+    expect(run("setting", "max_tickets").first).to eq(1)
+    expect(run("setting", "speed", "fast").last).to include("Unknown setting \"speed\"")
+  end
+
   describe "connect" do
     let(:transport) { FakeTransport.new }
 

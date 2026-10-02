@@ -67,17 +67,26 @@ module PlanDriven
 
       def check_migrations(report)
         added = @files.select { |file| file["filename"].start_with?("db/migrate/") && file["status"] == "added" }
-        if added.any? && !%w[migration backfill].include?(@ticket.kind)
-          report.error("A #{@ticket.kind} ticket adds a migration (#{added.first["filename"]}); " \
-                       "schema changes belong in their own migration ticket")
-        end
+        check_migration_ticket(report, added)
         check_migration_scope(report)
-        if added.empty? && @ticket.kind != "migration"
-          report.pass("No migrations, so the schema stays with the migration tickets")
-        end
         return if added.empty? || paths.any? { |path| path.match?(%r{\Adb/(schema\.rb|structure\.sql)\z}) }
 
         report.warning("A migration was added but db/schema.rb didn't change")
+      end
+
+      def check_migration_ticket(report, added)
+        return if %w[migration backfill].include?(@ticket.kind) && added.any?
+
+        if added.empty?
+          return unless @config.separate_migrations && @ticket.kind != "migration"
+
+          report.pass("No migrations, so the schema stays with the migration tickets")
+        elsif @config.separate_migrations
+          report.error("A #{@ticket.kind} ticket adds a migration (#{added.first["filename"]}); " \
+                       "schema changes belong in their own migration ticket")
+        else
+          report.pass("Adds #{added.size} migration(s) with the code that needs them (separate_migrations is off)")
+        end
       end
 
       def check_migration_scope(report)

@@ -138,6 +138,19 @@ RSpec.describe "Supporting pieces" do
                               "Use service objects in app/services", Fixtures::DRAFTED["database_changes"].lines.first.strip)
       expect(prompt.pr_title).to eq("[PD-1/T3] Backfill formable for existing forms")
     end
+
+    it "follows the settings for tests and migrations" do
+      code = plan.ticket!("T2")
+      text = described_class.new(code).to_s
+      expect(text).to include("run only the specs and features for the files you change",
+                              "Schema changes only in migration tickets; this ticket is a dual_write ticket.")
+
+      PlanDriven.configuration.targeted_tests = false
+      PlanDriven.configuration.separate_migrations = false
+      text = described_class.new(code).to_s
+      expect(text).not_to include("run only the specs")
+      expect(text).to include("add it as a migration in this pull request, with db/schema.rb")
+    end
   end
 
   describe PlanDriven::Renderer do

@@ -32,6 +32,8 @@ module PlanDriven
         "feedback" => ->(p) { [ticket(p), required(p, "feedback")] },
         "questions" => ->(_p) { [] },
         "question" => ->(p) { [question_key(p), *question_flags(p)] },
+        "settings" => ->(_p) { [] },
+        "setting" => ->(p) { setting_args(p) },
         # The key itself goes on stdin, so it's never in the command line or the panel.
         "connect" => ->(p) { [Connections.find(required(p, "service")).name] }
       }.merge(PLAN_ONLY.to_h { |name| [name, ->(p) { [plan(p)] }] }).freeze
@@ -89,6 +91,14 @@ module PlanDriven
         required(params, "key").tap do |key|
           raise ArgumentError, "not a question key" unless key.match?(Interview::KEY)
         end
+      end
+
+      def setting_args(params)
+        key = Settings.find(required(params, "key")).key
+        return [key, "--default"] if params["default"].to_s == "1"
+
+        value = params["value"].to_s.strip
+        [key, value.empty? ? "none" : value]
       end
 
       def question_flags(params)
