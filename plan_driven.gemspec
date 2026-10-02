@@ -8,7 +8,8 @@ Gem::Specification.new do |spec|
   spec.authors = ["Ivan Blažević"]
   spec.email = ["ivan.blazevic@rubycode.co"]
 
-  spec.summary = "From implementation plan to merged, tested pull requests, driven from the browser or the terminal."
+  spec.summary = "From implementation plan to merged, tested pull requests: AI agents write the code, " \
+                 "developers review, guardrails and tests protect quality. Browser wizard or CLI."
   spec.description = <<~DESC
     plan_driven runs a Rails team's delivery process inside your Rails app, from a browser wizard
     or the command line: every button in the wizard runs the same plan-driven command. A short
