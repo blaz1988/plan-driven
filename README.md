@@ -29,44 +29,9 @@ Zagreb. [Need Rails engineers?](#about-rubycode)
 
 ## Watch it deliver a feature
 
-[![Watch the plan_driven wizard demo (12 min)](docs/images/wizard-demo.png)](https://github.com/blaz1988/plan-driven/releases/download/v0.1.0/plan-driven-wizard.mp4)
 
-**[▶ Watch the wizard demo](https://github.com/blaz1988/plan-driven/releases/download/v0.1.0/plan-driven-wizard.mp4)**
-(12 minutes, narrated, with captions). One feature, comments on events, is delivered from
-the [browser wizard](#the-browser-wizard) in [Gather](https://github.com/blaz1988/gather):
-the plan drafted and one section redrafted, six tickets as issues
-([#34](https://github.com/blaz1988/gather/issues/34) to
-[#39](https://github.com/blaz1988/gather/issues/39)), six agents and six pull requests
-([#40](https://github.com/blaz1988/gather/pull/40) to
-[#45](https://github.com/blaz1988/gather/pull/45)), one round of feedback, and 42 of 42
-acceptance criteria proven by a passing scenario. After every click the video zooms into the
-wizard's terminal panel, which shows the `plan-driven` command that ran and its output. The
-wizard ships with 0.2.0.
+https://github.com/user-attachments/assets/4f3c26e1-437b-4bb5-92c2-31e693859e99
 
-<details>
-<summary>Chapters</summary>
-
-| Time | Chapter |
-| ---: | --- |
-| 0:00 | What plan_driven is |
-| 0:24 | Installing it, and how the wizard works |
-| 1:13 | `doctor`, from the wizard |
-| 1:48 | The interview as a form, and the draft |
-| 2:43 | Reading the plan, redrafting a section, submitting and approving |
-| 3:51 | Tickets drafted and approved, as GitHub issues |
-| 4:37 | Starting the agents |
-| 5:18 | Refreshing, and `review` |
-| 6:01 | Reading the first pull request |
-| 6:46 | Approving and merging, and the next agent starts |
-| 7:43 | Feedback to the agent on T3 |
-| 8:24 | Every ticket merged |
-| 8:53 | Evidence (42 of 42), tokens, and the delivery report |
-| 9:47 | Reading the delivery report |
-| 10:11 | The feature in the app |
-| 10:46 | The same commands in a terminal |
-| 11:22 | Recap |
-
-</details>
 
 ### The CLI deep dive
 
