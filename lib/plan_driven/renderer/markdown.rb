@@ -6,10 +6,10 @@ module PlanDriven
     module Markdown
       module_function
 
-      def plan(plan, config: PlanDriven.configuration)
+      def plan(plan, config: PlanDriven.configuration, diagram: false)
         parts = ["# #{plan.key}: #{plan.title}", meta(plan)]
         config.template.grouped.each do |group, sections|
-          body = sections.filter_map { |section| section_block(plan, section, group) }
+          body = sections.filter_map { |section| section_block(plan, section, group, diagram: diagram) }
           body << tickets_table(plan) if group == "Work overview" && plan.tickets.any?
           parts << "# #{group}\n\n#{body.join("\n\n")}" if body.any?
         end
@@ -32,13 +32,16 @@ module PlanDriven
         "#{parts.join("\n\n")}\n"
       end
 
-      def section_block(plan, section, group)
+      def section_block(plan, section, group, diagram: false)
         text = plan.section(section.key).strip
         return if text.empty?
 
         heading = section.title == group ? "" : "## #{section.title}\n\n"
-        "#{heading}#{text}"
+        figure = diagram && section.key == "database_changes" ? DIAGRAM : ""
+        "#{heading}#{figure}#{text}"
       end
+
+      DIAGRAM = "![Data model: the tables this plan creates, changes or removes](#{DataModel::FILE})\n\n".freeze
 
       def meta(plan)
         "*Status: #{plan.status.tr("_", " ")} · Revision #{plan.revision} · Created by #{plan.created_by} · " \

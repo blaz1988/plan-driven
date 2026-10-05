@@ -13,8 +13,14 @@ module PlanDriven
   module Renderer
     module_function
 
-    def write_plan(plan, config: PlanDriven.configuration)
-      write(plan, "plan", Markdown.plan(plan, config: config), title: "#{plan.key} #{plan.title}", config: config)
+    # The data model diagram is an SVG beside the plan, like the report's charts.
+    def write_plan(plan, config: PlanDriven.configuration, schema: nil)
+      dir = directory(plan, config: config)
+      FileUtils.mkdir_p(dir)
+      diagram = DataModel.write(plan, dir, schema: schema || SchemaContext.new, config: config)
+      images = diagram ? { DataModel::FILE => diagram.read } : {}
+      write(plan, "plan", Markdown.plan(plan, config: config, diagram: !diagram.nil?),
+            title: "#{plan.key} #{plan.title}", config: config, images: images)
     end
 
     # The charts are SVG files beside the report, so GitHub shows them in the Markdown; the HTML

@@ -366,6 +366,7 @@ off, mostly fewer pull requests and tokens against bigger reviews:
 
 | Setting | Recommended | What it decides |
 | --- | --- | --- |
+| `data_model_diagram` | on | A diagram of the tables the plan creates, changes or removes (see below) |
 | `ticket_split` | `small` | One user-visible behaviour per ticket, or related behaviours together (`larger`) |
 | `max_tickets` | no limit | At most this many tickets per plan |
 | `max_estimate` | `5` | The largest ticket, in story points |
@@ -375,6 +376,14 @@ off, mostly fewer pull requests and tokens against bigger reviews:
 | `cucumber` | on | Every acceptance criterion is proved by a scenario |
 | `targeted_tests` | on | Agents run only the specs they need while working, the whole suite once at the end |
 | `max_parallel_agents` | `3` | Agents working at the same time |
+
+With `data_model_diagram` on, the plan opens Database changes with a diagram of the tables it
+creates, changes or removes, and the tables they reference. New tables and columns are green,
+changed ones amber, removed ones red and struck through. It's drawn in Ruby from the migration
+code in the section and the real schema, not by the model, so it can't show a table that isn't
+there; the drafting model is asked to write every schema change as migration code, and the plan
+guard warns when a change is only described in prose. The SVG is `data-model.svg` beside
+`plan.md`, so it shows on GitHub, in the HTML and the PDF, and on the wizard's Plan step.
 
 With `separate_migrations` off, an additive migration goes in the pull request of the first code
 that needs it; removing or renaming a column still gets its own cleanup ticket. Each Save runs

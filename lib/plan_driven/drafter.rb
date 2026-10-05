@@ -66,7 +66,7 @@ module PlanDriven
         Follow Rails conventions. Changes are additive and legacy-safe: expand, dual write,
         backfill, switch reads, then contract. Never describe something as existing unless it
         is in the schema you are given. When you don't know, say so under Outstanding questions.
-
+        #{diagram_rule}
         Reply with one JSON object and nothing else:
         {"sections": {"<key>": "<markdown>", ...}, "assumptions": ["..."]}
 
@@ -76,6 +76,14 @@ module PlanDriven
     end
 
     private
+
+    def diagram_rule
+      return "" unless @config.data_model_diagram
+
+      "In Database changes, write every schema change as Rails migration code in a ```ruby block " \
+        "(create_table, add_column, add_reference, remove_column, rename_column...): the data model " \
+        "diagram is drawn from that code.\n"
+    end
 
     def request(answers, title)
       asked = @template.asked.filter_map do |section|

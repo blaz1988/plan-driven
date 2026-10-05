@@ -22,10 +22,27 @@ module PlanDriven
         check_risk_level(report)
         check_existing_structure(report)
         report.merge!(MigrationGuard.new(@sections["database_changes"].to_s, schema: @schema).call)
+        check_data_model(report)
         report
       end
 
       private
+
+      def check_data_model(report)
+        return unless PlanDriven.configuration.data_model_diagram
+
+        text = @sections["database_changes"].to_s
+        model = DataModel.new(text, schema: @schema)
+        if model.drawable?
+          report.pass("The data model diagram shows #{model.subjects.size} table(s) the plan changes")
+          return
+        end
+        migration = MigrationGuard.new(text, schema: @schema)
+        return if migration.new_tables.empty? && migration.changed_tables.empty?
+
+        report.warning("Database changes describe schema changes without migration code, so the data model " \
+                       "diagram can't be drawn; add the migrations in a ```ruby block")
+      end
 
       def check_sections(report)
         @template.sections.each do |section|

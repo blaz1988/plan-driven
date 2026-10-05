@@ -46,7 +46,7 @@ checks = {
   "/plan_driven" => ["PD-1", "Check the setup"],
   "/plan_driven/plans/new" => ["What are we building?", "Draft the plan", "earlier decisions (optional)"],
   "/plan_driven/configuration" => ["Connections", "Paste the Cursor key", "Interview questions", "Add a question",
-                                   "config/plan_driven/interview.yml", "Tickets and pull requests",
+                                   "config/plan_driven/interview.yml", "Plans, tickets and pull requests", "data_model_diagram",
                                    "separate_migrations", "a rollback undoes both", "List the settings"],
   "/plan_driven/plans/PD-1" => ["<strong>category</strong>", "What is too short", "Run the guards"],
   "/plan_driven/plans/PD-1/approve" => ["review", "submit it on the Plan step"],

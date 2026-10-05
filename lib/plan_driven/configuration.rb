@@ -135,6 +135,7 @@ module PlanDriven
       @spec_paths = %w[spec/ test/ features/]
       @features_path = "features"
 
+      @data_model_diagram = true
       @ticket_split = "small"
       @max_tickets = nil
       @max_estimate = 5

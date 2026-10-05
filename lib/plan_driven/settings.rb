@@ -27,6 +27,16 @@ module PlanDriven
 
     OPTIONS = [
       Option.new(
+        key: "data_model_diagram", type: :boolean, group: "Plan",
+        title: "Draw the data model the plan changes",
+        explanation: "A diagram of the tables the plan creates, changes or removes, and the tables they " \
+                     "reference, in the plan, its PDF and on GitHub. It's drawn from the migration code in " \
+                     "Database changes and the real schema, not by the model, so the model is asked to write " \
+                     "every schema change as migration code.",
+        tradeoff: "Off: reviewers read the schema changes as text only. On costs no extra model call, only the " \
+                  "few lines of migration code the plan should have anyway."
+      ),
+      Option.new(
         key: "ticket_split", type: :choice, choices: %w[small larger], group: "Tickets",
         title: "How finely the plan is split",
         explanation: "small: one thing a user can do per ticket, at most max_estimate points, so every pull " \

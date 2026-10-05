@@ -23,7 +23,9 @@ module Fixtures
                       "rollout both owners are written, existing forms are backfilled, reads switch to formable, " \
                       "and only then is the legacy column removed. Projects keep a snapshot of the form they use.",
     "database_changes" => "### forms\nAdd `formable_type` (string, nullable) and `formable_id` (bigint, nullable) " \
-                          "with an index on (type, formable_type, formable_id).\n\nAfter the backfill, add " \
+                          "with an index on (type, formable_type, formable_id).\n\n```ruby\n" \
+                          "add_reference :forms, :formable, polymorphic: true, index: false\n" \
+                          "add_index :forms, [:type, :formable_type, :formable_id]\n```\n\nAfter the backfill, add " \
                           "`business_process_id` to `ignored_columns`, deploy, then remove the column in a later " \
                           "migration and add NOT NULL to formable_type and formable_id.",
     "application_changes" => "### Form\nWrite business_process_id and formable together on create. Read forms " \

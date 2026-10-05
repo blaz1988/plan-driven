@@ -29,6 +29,10 @@
       <summary><%= section.title %>
         <% if @plan.section(section.key).strip.empty? %><span class="pill wait">empty</span><% end %></summary>
       <div>
+        <% diagram = PlanDriven::Renderer.directory(@plan).join(PlanDriven::DataModel::FILE) if section.key == "database_changes" %>
+        <% if diagram&.file? %>
+          <div class="diagram" style="overflow-x:auto; margin:6px 0 12px"><%= diagram.read.html_safe %></div>
+        <% end %>
         <div class="doc"><%= markdown(@plan.section(section.key)) %></div>
         <% if @plan.editable? %>
           <% fields = { step: "plan", section: section.key, open: section.key } %>

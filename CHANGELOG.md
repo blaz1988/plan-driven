@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- A data model diagram in the plan (`data_model_diagram`, on by default): the tables the plan
+  creates, changes or removes, and the tables they reference, with new, changed and removed
+  columns marked. It's drawn in Ruby from the migration code in Database changes and the real
+  schema, written as `data-model.svg` beside `plan.md`, and shown in the HTML, the PDF and the
+  wizard. The drafting model is asked for migration code, and the plan guard warns when a schema
+  change has none.
+
 ## [0.4.0] - 2026-10-05
 
 ### Added

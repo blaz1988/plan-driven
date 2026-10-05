@@ -47,8 +47,8 @@
   the panel or the logs. A key in the environment always wins.</p>
 <%= button_to "Check every connection", configuration_check_path(do: "doctor"), form: { style: "display:inline" } %>
 
-<h2 id="settings">Tickets and pull requests</h2>
-<p class="muted">How the plan is split into tickets, and what every pull request has to pass. Each default is the
+<h2 id="settings">Plans, tickets and pull requests</h2>
+<p class="muted">What the plan shows, how it's split into tickets, and what every pull request has to pass. Each default is the
   practice we recommend; change one when the trade-off suits your team. Changes are written to
   <code><%= PlanDriven::Settings::PATH %></code> and win over the initializer; commit it so the whole team works the same way.</p>
 
