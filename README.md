@@ -362,6 +362,8 @@ Drafted sections (Database changes, Risks...) belong to the model and can't be c
 option starts at the recommended Rails practice, and each one explains what changing it trades
 off, mostly fewer pull requests and tokens against bigger reviews:
 
+![The settings on the Configuration page, each with its recommendation and trade-off](docs/images/19-settings.png)
+
 | Setting | Recommended | What it decides |
 | --- | --- | --- |
 | `ticket_split` | `small` | One user-visible behaviour per ticket, or related behaviours together (`larger`) |
