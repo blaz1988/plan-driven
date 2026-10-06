@@ -383,7 +383,8 @@ changed ones amber, removed ones red and struck through. It's drawn in Ruby from
 code in the section and the real schema, not by the model, so it can't show a table that isn't
 there; the drafting model is asked to write every schema change as migration code, and the plan
 guard warns when a change is only described in prose. The SVG is `data-model.svg` beside
-`plan.md`, so it shows on GitHub, in the HTML and the PDF, and on the wizard's Plan step.
+`plan.md`, so it shows on GitHub, in the HTML and the PDF, and on the wizard's Plan step (see
+[Read the plan](#2-read-the-plan) for an example).
 
 With `separate_migrations` off, an additive migration goes in the pull request of the first code
 that needs it; removing or renaming a column still gets its own cleanup ticket. Each Save runs
@@ -457,6 +458,13 @@ one section). Existing Data Structure is checked against the app, so every model
 column it cites exists.
 
 ![The plan, grounded in the real schema](docs/images/03-plan.png)
+
+Database changes opens with the data model: the tables the plan creates or changes, the tables
+they reference, and every new, changed or removed column. Here PD-3 adds a `comments` table that
+belongs to an event and a user. The reviewer sees the change at a glance, then reads the
+migration it's drawn from right below.
+
+![Database changes in the PD-3 plan: the data model diagram above the migration it's drawn from](docs/images/20-data-model.png)
 
 **Every section of the plan can be changed**, not only Outstanding questions: What, Why,
 Database changes, Application changes, Risks, Testing, any of them (the keys are listed under
